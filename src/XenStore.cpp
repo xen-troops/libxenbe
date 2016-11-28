@@ -234,23 +234,23 @@ void XenStore::clearWatch(const string& path)
 
 void XenStore::init()
 {
-	LOG(mLog, DEBUG) << "Create xen store";
-
 	mXsHandle = xs_open(0);
 
 	if (!mXsHandle)
 	{
 		throw XenStoreException("Can't open xs daemon");
 	}
+
+	LOG(mLog, DEBUG) << "Create xen store";
 }
 
 void XenStore::release()
 {
-	LOG(mLog, DEBUG) << "Delete xen store";
-
 	if (mXsHandle)
 	{
 		xs_close(mXsHandle);
+
+		LOG(mLog, DEBUG) << "Delete xen store";
 	}
 }
 

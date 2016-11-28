@@ -86,23 +86,23 @@ void XenInterface::getDomainsInfo(vector<xc_domaininfo_t>& infos)
 
 void XenInterface::init()
 {
-	DLOG(mLog, DEBUG) << "Create xen interface";
-
 	mHandle = xc_interface_open(0,0,0);
 
 	if (!mHandle)
 	{
 		throw XenCtrlException("Can't open xc interface");
 	}
+
+	DLOG(mLog, DEBUG) << "Create xen interface";
 }
 
 void XenInterface::release()
 {
-	DLOG(mLog, DEBUG) << "Delete xen interface";
-
 	if (mHandle)
 	{
 		xc_interface_close(mHandle);
+
+		DLOG(mLog, DEBUG) << "Delete xen interface";
 	}
 }
 

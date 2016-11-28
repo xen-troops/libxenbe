@@ -130,9 +130,9 @@ void XenEvtchn::release()
 	if (mHandle)
 	{
 		xenevtchn_close(mHandle);
-	}
 
-	DLOG(mLog, DEBUG) << "Delete event channel, port: " << mPort;
+		DLOG(mLog, DEBUG) << "Delete event channel, port: " << mPort;
+	}
 }
 
 void XenEvtchn::eventThread()
