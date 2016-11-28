@@ -24,10 +24,10 @@
 #include <atomic>
 #include <functional>
 #include <list>
-#include <map>
 #include <mutex>
 #include <string>
 #include <thread>
+#include <unordered_map>
 #include <vector>
 
 extern "C" {
@@ -140,7 +140,7 @@ private:
 
 	xs_handle*	mXsHandle;
 
-	std::map<std::string, WatchCallback> mWatches;
+	std::unordered_map<std::string, WatchCallback> mWatches;
 	std::list<std::string> mInitNotifyWatches;
 
 	std::thread mThread;
