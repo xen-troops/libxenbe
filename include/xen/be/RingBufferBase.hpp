@@ -294,11 +294,11 @@ public:
 	{
 		xen_mb();
 
-		mEventBuffer[mPage->u.ring.in_prod % mNumEvents] = event;
+		mEventBuffer[mPage->in_prod % mNumEvents] = event;
 
 		xen_wmb();
 
-		mPage->u.ring.in_prod++;
+		mPage->in_prod++;
 
 		mEventChannel.notify();
 	}
