@@ -283,7 +283,11 @@ public:
 				static_cast<uint8_t*>(mBuffer.get()) + offset)),
 		mNumEvents(size/sizeof(Event))
 	{
+		xen_mb();
 
+		mPage->in_prod = 0;
+
+		xen_wmb();
 	}
 
 	/**
@@ -296,9 +300,9 @@ public:
 
 		mEventBuffer[mPage->in_prod % mNumEvents] = event;
 
-		xen_wmb();
-
 		mPage->in_prod++;
+
+		xen_wmb();
 
 		mEventChannel.notify();
 	}
