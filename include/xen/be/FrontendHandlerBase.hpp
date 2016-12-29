@@ -73,8 +73,8 @@ class XenStore;
  *         auto port = getXenStore().readInt("/path/to/eventChannel/port");
  *         uint32_t ref = getXenStore().readInt("/path/to/ringBuffer/ref);
  *
- *         std::shared_ptr<RingBufferItf> ringBuffer(new MyRingBuffer(id,
- *                                                   type, getDomId(), ref));
+ *         RingBufferPtr ringBuffer(new MyRingBuffer(id, type,
+ *                                                   getDomId(), ref));
  *         addChannel(port, ringBuffer);
  *     }
  * };
@@ -136,7 +136,7 @@ protected:
 	 * Adds new ring buffer to the frontend handler.
 	 * @param[in] ringBuffer the ring buffer instance
 	 */
-	void addRingBuffer(std::shared_ptr<RingBufferBase> ringBuffer);
+	void addRingBuffer(RingBufferPtr ringBuffer);
 
 private:
 	int mId;
@@ -151,7 +151,7 @@ private:
 	std::string mXsBackendPath;
 	std::string mXsFrontendPath;
 
-	std::list<std::shared_ptr<RingBufferBase>> mRingBuffers;
+	std::list<RingBufferPtr> mRingBuffers;
 
 	bool mWaitForFrontendInitialising;
 
@@ -170,6 +170,8 @@ private:
 	void onError(const std::exception& e);
 	void setBackendState(xenbus_state state);
 };
+
+typedef std::shared_ptr<FrontendHandlerBase> FrontendHandlerPtr;
 
 }
 

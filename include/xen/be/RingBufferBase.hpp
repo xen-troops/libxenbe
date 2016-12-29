@@ -315,6 +315,8 @@ private:
 	void onReceiveIndication() {}
 };
 
+typedef std::shared_ptr<RingBufferBase> RingBufferPtr;
+
 }
 
 #endif /* INCLUDE_RINGBUFFERBASE_HPP_ */

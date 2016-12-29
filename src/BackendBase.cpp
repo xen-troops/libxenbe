@@ -29,7 +29,6 @@ using std::chrono::milliseconds;
 using std::make_pair;
 using std::unique_ptr;
 using std::pair;
-using std::shared_ptr;
 using std::stoi;
 using std::string;
 using std::this_thread::sleep_for;
@@ -113,8 +112,7 @@ void BackendBase::stop()
  * Protected
  ******************************************************************************/
 
-void BackendBase::addFrontendHandler(shared_ptr<FrontendHandlerBase>
-									 frontendHandler)
+void BackendBase::addFrontendHandler(FrontendHandlerPtr frontendHandler)
 {
 	pair<int, int> ids(make_pair(frontendHandler->getDomId(),
 					   frontendHandler->getId()));

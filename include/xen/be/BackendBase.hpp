@@ -68,7 +68,7 @@ class BackendException : public XenException
  *
  *     void onNewFrontend(int domId, int id)
  *     {
- *         addFrontendHandler(std::shared_ptr<FrontendHandlerBase>(
+ *         addFrontendHandler(FrontendHandlerPtr(
  *                            new MyFrontendHandler(domId, *this, id)));
  *     }
  * };
@@ -139,8 +139,7 @@ protected:
 	 * Adds new frontend handler
 	 * @param[in] frontendHandler frontend instance
 	 */
-	void addFrontendHandler(std::shared_ptr<FrontendHandlerBase>
-							frontendHandler);
+	void addFrontendHandler(FrontendHandlerPtr frontendHandler);
 
 private:
 
@@ -152,8 +151,7 @@ private:
 	XenStore mXenStore;
 	XenStat mXenStat;
 
-	std::map<std::pair<int, int>,
-			 std::shared_ptr<FrontendHandlerBase>> mFrontendHandlers;
+	std::map<std::pair<int, int>, FrontendHandlerPtr> mFrontendHandlers;
 
 	std::atomic_bool mTerminate;
 

@@ -39,7 +39,6 @@ using std::lock_guard;
 using std::make_pair;
 using std::mutex;
 using std::placeholders::_1;
-using std::shared_ptr;
 using std::stoi;
 using std::string;
 using std::stringstream;
@@ -125,7 +124,7 @@ xenbus_state FrontendHandlerBase::getBackendState()
  * Protected
  ******************************************************************************/
 
-void FrontendHandlerBase::addRingBuffer(shared_ptr<RingBufferBase> ringBuffer)
+void FrontendHandlerBase::addRingBuffer(RingBufferPtr ringBuffer)
 {
 	lock_guard<mutex> lock(mMutex);
 
