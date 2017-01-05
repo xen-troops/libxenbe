@@ -88,15 +88,18 @@ public:
 
 	/**
 	 * Starts backend.
-	 * This method is blocking and terminates in case of error or stop()
-	 * is called from the another thread.
 	 */
-	void run();
+	void start();
 
 	/**
 	 * Stops backend.
 	 */
 	void stop();
+
+	/**
+	 * Waits for backend is finished.
+	 */
+	void waitForFinish();
 
 	/**
 	 * Returns backend device name
@@ -153,10 +156,13 @@ private:
 
 	std::map<std::pair<int, int>, FrontendHandlerPtr> mFrontendHandlers;
 
+	std::thread mThread;
 	std::atomic_bool mTerminate;
+	std::atomic_bool mTerminated;
 
 	Log mLog;
 
+	void run();
 	void createFrontendHandler(const std::pair<int, int>& ids);
 	void checkTerminatedFrontends();
 };

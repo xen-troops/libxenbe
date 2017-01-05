@@ -26,12 +26,14 @@
 #include "Utils.hpp"
 
 using std::chrono::milliseconds;
+using std::exception;
 using std::make_pair;
 using std::unique_ptr;
 using std::pair;
 using std::stoi;
 using std::string;
 using std::this_thread::sleep_for;
+using std::thread;
 using std::vector;
 
 namespace XenBackend {
@@ -66,6 +68,7 @@ BackendBase::BackendBase(int domId, const string& deviceName, int id) :
 	mXenStore(),
 	mXenStat(),
 	mTerminate(false),
+	mTerminated(true),
 	mLog("Backend")
 {
 	LOG(mLog, DEBUG) << "Create backend: " << deviceName << ", " << id;
@@ -73,6 +76,8 @@ BackendBase::BackendBase(int domId, const string& deviceName, int id) :
 
 BackendBase::~BackendBase()
 {
+	stop();
+
 	mFrontendHandlers.clear();
 
 	LOG(mLog, DEBUG) << "Delete backend: " << mDeviceName << ", " << mId;
@@ -82,23 +87,17 @@ BackendBase::~BackendBase()
  * Public
  ******************************************************************************/
 
-void BackendBase::run()
+void BackendBase::start()
 {
-	LOG(mLog, INFO) << "Wait for frontend";
-
-	while(!mTerminate)
+	if (!mTerminated)
 	{
-		int domId = -1, id = -1;
-
-		if (getNewFrontend(domId, id))
-		{
-			createFrontendHandler(make_pair(domId, id));
-		}
-
-		checkTerminatedFrontends();
-
-		sleep_for(milliseconds(cPollFrontendIntervalMs));
+		throw BackendException("Alread started");
 	}
+
+	mTerminate = false;
+	mTerminated = false;
+
+	mThread = thread(&BackendBase::run, this);
 }
 
 void BackendBase::stop()
@@ -106,6 +105,17 @@ void BackendBase::stop()
 	LOG(mLog, INFO) << "Stop";
 
 	mTerminate = true;
+
+	waitForFinish();
+}
+
+
+void BackendBase::waitForFinish()
+{
+	if (mThread.joinable())
+	{
+		mThread.join();
+	}
 }
 
 /*******************************************************************************
@@ -158,6 +168,36 @@ bool BackendBase::getNewFrontend(int& domId, int& id)
 /*******************************************************************************
  * Private
  ******************************************************************************/
+
+void BackendBase::run()
+{
+	LOG(mLog, INFO) << "Wait for frontend";
+
+	try
+	{
+		while(!mTerminate)
+		{
+			int domId = -1, id = -1;
+
+			if (getNewFrontend(domId, id))
+			{
+				createFrontendHandler(make_pair(domId, id));
+			}
+
+			checkTerminatedFrontends();
+
+			sleep_for(milliseconds(cPollFrontendIntervalMs));
+		}
+	}
+	catch(const exception& e)
+	{
+		LOG(mLog, ERROR) << e.what();
+	}
+
+	mTerminated = true;
+
+	LOG(mLog, INFO) << "Terminated";
+}
 
 void BackendBase::createFrontendHandler(const std::pair<int, int>& ids)
 {
