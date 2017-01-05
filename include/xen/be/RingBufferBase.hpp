@@ -22,6 +22,7 @@
 #define INCLUDE_RINGBUFFERBASE_HPP_
 
 #include <atomic>
+#include <mutex>
 
 extern "C" {
 #include "xenctrl.h"
@@ -296,6 +297,8 @@ public:
 	 */
 	void sendEvent(const Event& event)
 	{
+		std::lock_guard<std::mutex> lock(mMutex);
+
 		xen_mb();
 
 		mEventBuffer[mPage->in_prod % mNumEvents] = event;
@@ -311,6 +314,8 @@ private:
 	Page* mPage;
 	Event* mEventBuffer;
 	int mNumEvents;
+
+	std::mutex mMutex;
 
 	void onReceiveIndication() {}
 };
