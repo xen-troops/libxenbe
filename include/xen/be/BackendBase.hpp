@@ -66,7 +66,7 @@ class BackendException : public XenException
  *
  * private:
  *
- *     void onNewFrontend(int domId, int id)
+ *     void onNewFrontend(domid_t domId, int id)
  *     {
  *         addFrontendHandler(FrontendHandlerPtr(
  *                            new MyFrontendHandler(domId, *this, id)));
@@ -83,7 +83,7 @@ public:
 	 * @param[in] deviceName device name
 	 * @param[in] id         instance id
 	 */
-	BackendBase(int domId, const std::string& deviceName, int id = 0);
+	BackendBase(domid_t domId, const std::string& deviceName, int id = 0);
 	virtual ~BackendBase();
 
 	/**
@@ -114,7 +114,7 @@ public:
 	/**
 	 * Returns domain id
 	 */
-	int getDomId() const { return mDomId; }
+	domid_t getDomId() const { return mDomId; }
 
 protected:
 	/**
@@ -126,7 +126,7 @@ protected:
 	 * @param[out] id    instance id
 	 * @return <i>true</i> if new frontend is detected
 	 */
-	virtual bool getNewFrontend(int& domId, int& id);
+	virtual bool getNewFrontend(domid_t& domId, int& id);
 
 	/**
 	 * Is called when new frontend detected.
@@ -136,7 +136,7 @@ protected:
 	 * @param[in] domId domain id
 	 * @param[in] id    instance id
 	 */
-	virtual void onNewFrontend(int domId, int id) = 0;
+	virtual void onNewFrontend(domid_t domId, int id) = 0;
 
 	/**
 	 * Adds new frontend handler
@@ -146,15 +146,17 @@ protected:
 
 private:
 
-	int cPollFrontendIntervalMs = 500; //!< Frontend poll interval in msec
+	const int cPollFrontendIntervalMs = 500; //!< Frontend poll interval in msec
+
+	typedef std::pair<domid_t, int> FrontendKey;
 
 	int mId;
-	int mDomId;
+	domid_t mDomId;
 	std::string mDeviceName;
 	XenStore mXenStore;
 	XenStat mXenStat;
 
-	std::map<std::pair<int, int>, FrontendHandlerPtr> mFrontendHandlers;
+	std::map<FrontendKey, FrontendHandlerPtr> mFrontendHandlers;
 
 	std::thread mThread;
 	std::atomic_bool mTerminate;
@@ -163,7 +165,7 @@ private:
 	Log mLog;
 
 	void run();
-	void createFrontendHandler(const std::pair<int, int>& ids);
+	void createFrontendHandler(const FrontendKey& ids);
 	void checkTerminatedFrontends();
 };
 

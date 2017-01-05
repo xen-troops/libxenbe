@@ -65,7 +65,7 @@ XenStore::~XenStore()
  * Public
  ******************************************************************************/
 
-string XenStore::getDomainPath(int domId)
+string XenStore::getDomainPath(domid_t domId)
 {
 	auto domPath = xs_get_domain_path(mXsHandle, domId);
 
@@ -83,22 +83,20 @@ string XenStore::getDomainPath(int domId)
 
 int XenStore::readInt(const string& path)
 {
-	unsigned length;
-	auto pData = static_cast<char*>(xs_read(mXsHandle, XBT_NULL, path.c_str(),
-											&length));
-
-	if (!pData)
-	{
-		throw XenStoreException("Can't read int from: " + path);
-	}
-
-	string result(pData);
-
-	free(pData);
+	int result = stoi(readString(path));
 
 	LOG(mLog, DEBUG) << "Read int " << path << " : " << result;
 
-	return stoi(result);
+	return result;
+}
+
+unsigned int XenStore::readUint(const string& path)
+{
+	unsigned int result = stoul(readString(path));
+
+	LOG(mLog, DEBUG) << "Read unsigned int " << path << " : " << result;
+
+	return result;
 }
 
 string XenStore::readString(const string& path)

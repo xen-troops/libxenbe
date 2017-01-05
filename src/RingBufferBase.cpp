@@ -31,7 +31,8 @@ namespace XenBackend {
  * RingBufferBase
  ******************************************************************************/
 
-RingBufferBase::RingBufferBase(int domId, int port, int ref) :
+RingBufferBase::RingBufferBase(domid_t domId, evtchn_port_t port,
+							   grant_ref_t ref) :
 	mEventChannel(domId, port, [this] { onReceiveIndication(); },
 				  bind(&RingBufferBase::onError, this, _1)),
 	mBuffer(domId, ref, PROT_READ | PROT_WRITE),

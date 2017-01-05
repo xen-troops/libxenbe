@@ -51,12 +51,12 @@ public:
 	/**
 	 * Returns running domain ids.
 	 */
-	std::vector<int32_t> getRunningDoms();
+	std::vector<domid_t> getRunningDoms();
 
 	/**
 	 * Returns existing domain ids.
 	 */
-	std::vector<int32_t> getExistingDoms();
+	std::vector<domid_t> getExistingDoms();
 
 private:
 

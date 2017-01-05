@@ -78,7 +78,8 @@ public:
 	 * @param[in] ref   grant reference id
 	 * @param[in] prot  same flag as in mmap()
 	 */
-	XenGnttabBuffer(int domId, uint32_t ref, int prot = PROT_READ | PROT_WRITE);
+	XenGnttabBuffer(domid_t domId, grant_ref_t ref,
+					int prot = PROT_READ | PROT_WRITE);
 
 	/**
 	 * @param[in] domId domain id
@@ -86,7 +87,7 @@ public:
 	 * @param[in] count number of grant refgerence ids
 	 * @param[in] prot  same flag as in mmap()
 	 */
-	XenGnttabBuffer(int domId, const uint32_t* refs, size_t count,
+	XenGnttabBuffer(domid_t domId, const grant_ref_t* refs, size_t count,
 					int prot = PROT_READ | PROT_WRITE);
 	XenGnttabBuffer(const XenGnttabBuffer&) = delete;
 	XenGnttabBuffer& operator=(XenGnttabBuffer const&) = delete;
@@ -106,11 +107,10 @@ private:
 	void* mBuffer;
 	xengnttab_handle* mHandle;
 	size_t mCount;
-	int mDomId;
 	Log mLog;
 
 
-	void init(const uint32_t* refs, size_t count, int prot);
+	void init(domid_t domId, const grant_ref_t* refs, size_t count, int prot);
 	void release();
 };
 

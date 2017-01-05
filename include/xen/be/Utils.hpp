@@ -24,6 +24,7 @@
 #include <string>
 
 extern "C" {
+#include <xen/xen.h>
 #include <xen/io/xenbus.h>
 }
 
@@ -43,7 +44,7 @@ public:
 	 * @param[in] id    instance id
 	 * @return string representation of domain id and istance id
 	 */
-	static std::string logDomId(int domId, int id);
+	static std::string logDomId(domid_t domId, int id);
 
 	/**
 	 * Returns string representation of xen domain state

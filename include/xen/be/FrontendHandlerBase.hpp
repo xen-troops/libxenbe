@@ -68,7 +68,7 @@ class XenStore;
  *
  * private:
  *
- *     void onBind(int domId, int id)
+ *     void onBind(domid_t domId, int id)
  *     {
  *         auto port = getXenStore().readInt("/path/to/eventChannel/port");
  *         uint32_t ref = getXenStore().readInt("/path/to/ringBuffer/ref);
@@ -89,13 +89,13 @@ public:
 	 * @param[in] backend    reference to the backend instance
 	 * @param[in] id         frontend instance id
 	 */
-	FrontendHandlerBase(int domId, BackendBase& backend, int id = 0);
+	FrontendHandlerBase(domid_t domId, BackendBase& backend, int id = 0);
 	virtual ~FrontendHandlerBase();
 
 	/**
 	 * Returns frontend domain id
 	 */
-	int getDomId() const { return mDomId; }
+	domid_t getDomId() const { return mDomId; }
 
 	/**
 	 * Returns frontend instance id
@@ -139,8 +139,9 @@ protected:
 	void addRingBuffer(RingBufferPtr ringBuffer);
 
 private:
+
 	int mId;
-	int mDomId;
+	domid_t mDomId;
 	BackendBase& mBackend;
 
 	xenbus_state mBackendState;

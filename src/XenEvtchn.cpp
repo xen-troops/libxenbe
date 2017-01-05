@@ -34,7 +34,7 @@ namespace XenBackend {
  * XenEvtchn
  ******************************************************************************/
 
-XenEvtchn::XenEvtchn(int domId, int port, Callback callback,
+XenEvtchn::XenEvtchn(domid_t domId, evtchn_port_t port, Callback callback,
 					 ErrorCallback errorCallback) :
 	mPort(-1),
 	mCallback(callback),
@@ -99,7 +99,7 @@ void XenEvtchn::notify()
  * Private
  ******************************************************************************/
 
-void XenEvtchn::init(int domId, int port)
+void XenEvtchn::init(domid_t domId, evtchn_port_t port)
 {
 	mHandle = xenevtchn_open(nullptr, 0);
 

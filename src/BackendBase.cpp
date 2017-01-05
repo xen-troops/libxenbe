@@ -61,7 +61,7 @@ namespace XenBackend {
  * BackendBase
  ******************************************************************************/
 
-BackendBase::BackendBase(int domId, const string& deviceName, int id) :
+BackendBase::BackendBase(domid_t domId, const string& deviceName, int id) :
 	mId(id),
 	mDomId(domId),
 	mDeviceName(deviceName),
@@ -71,7 +71,7 @@ BackendBase::BackendBase(int domId, const string& deviceName, int id) :
 	mTerminated(true),
 	mLog("Backend")
 {
-	LOG(mLog, DEBUG) << "Create backend: " << deviceName << ", " << id;
+	LOG(mLog, DEBUG) << "Create backend: " << deviceName << ", " << mId;
 }
 
 BackendBase::~BackendBase()
@@ -124,13 +124,13 @@ void BackendBase::waitForFinish()
 
 void BackendBase::addFrontendHandler(FrontendHandlerPtr frontendHandler)
 {
-	pair<int, int> ids(make_pair(frontendHandler->getDomId(),
-					   frontendHandler->getId()));
+	FrontendKey key(make_pair(frontendHandler->getDomId(),
+					frontendHandler->getId()));
 
-	mFrontendHandlers.insert(make_pair(ids, frontendHandler));
+	mFrontendHandlers.insert(make_pair(key, frontendHandler));
 }
 
-bool BackendBase::getNewFrontend(int& domId, int& id)
+bool BackendBase::getNewFrontend(domid_t& domId, int& id)
 {
 	for (auto dom : mXenStat.getExistingDoms())
 	{
@@ -177,7 +177,8 @@ void BackendBase::run()
 	{
 		while(!mTerminate)
 		{
-			int domId = -1, id = -1;
+			domid_t domId = 0;
+			int id = 0;
 
 			if (getNewFrontend(domId, id))
 			{
@@ -199,7 +200,7 @@ void BackendBase::run()
 	LOG(mLog, INFO) << "Terminated";
 }
 
-void BackendBase::createFrontendHandler(const std::pair<int, int>& ids)
+void BackendBase::createFrontendHandler(const FrontendKey& ids)
 {
 	if ((ids.first > 0) &&
 		(mFrontendHandlers.find(ids) == mFrontendHandlers.end()))

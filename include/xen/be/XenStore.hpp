@@ -31,6 +31,7 @@
 #include <vector>
 
 extern "C" {
+#include <xen/xen.h>
 #include <xenstore.h>
 }
 
@@ -73,7 +74,7 @@ public:
 	 * Returns the home path of the domain.
 	 * @param domId domain id
 	 */
-	std::string getDomainPath(int domId);
+	std::string getDomainPath(domid_t domId);
 
 	/**
 	 * Read XS entry as integer.
@@ -81,6 +82,13 @@ public:
 	 * @return integer value
 	 */
 	int readInt(const std::string& path);
+
+	/**
+	 * Read XS entry as unsigned integer.
+	 * @param[in] path path to the entry
+	 * @return integer value
+	 */
+	unsigned int readUint(const std::string& path);
 
 	/**
 	 * Read XS entry as string.
@@ -134,6 +142,7 @@ public:
 	void clearWatch(const std::string& path);
 
 private:
+
 	const int cPollWatchesTimeoutMs = 100;
 
 	ErrorCallback mErrorCallback;

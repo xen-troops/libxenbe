@@ -25,7 +25,7 @@
 #include <mutex>
 
 extern "C" {
-#include "xenctrl.h"
+#include <xenctrl.h>
 #include <xen/io/ring.h>
 }
 
@@ -58,7 +58,7 @@ public:
 	 * @param port  event channel port number
 	 * @param ref   grant table reference
 	 */
-	RingBufferBase(int domId, int port, int ref);
+	RingBufferBase(domid_t domId, evtchn_port_t port, grant_ref_t ref);
 	virtual ~RingBufferBase();
 
 	/**
@@ -79,12 +79,12 @@ public:
 	/**
 	 * Returns event channel port.
 	 */
-	int getPort() const { return mPort; }
+	evtchn_port_t getPort() const { return mPort; }
 
 	/**
 	 * Returns grant table reference.
 	 */
-	int getRef() const { return mRef; }
+	grant_ref_t getRef() const { return mRef; }
 
 protected:
 
@@ -107,8 +107,8 @@ protected:
 
 private:
 
-	int mPort;
-	int mRef;
+	evtchn_port_t mPort;
+	grant_ref_t mRef;
 
 	std::atomic_bool mTerminated;
 
@@ -131,7 +131,7 @@ private:
  *                                         my_resp>
  * {
  * public:
- *     MyRingBuffer(int domId, int port, int ref) :
+ *     MyRingBuffer(domid_t domId, int port, int ref) :
  *         RingBufferInBase<my_back_ring, my_sring, my_req, my_resp>
  *             (domId, port, ref) {}
  * private:
@@ -158,7 +158,8 @@ public:
 	 * @param[in] ref      ring buffer ref number
 	 * @param[in] pageSize ring buffer page size
 	 */
-	RingBufferInBase(int domId, int port, int ref, int pageSize = 4096) :
+	RingBufferInBase(domid_t domId, evtchn_port_t port,
+					 grant_ref_t ref, int pageSize = 4096) :
 		RingBufferBase(domId, port, ref)
 	{
 		BACK_RING_INIT(&mRing, static_cast<Page*>(mBuffer.get()), pageSize);
@@ -277,7 +278,8 @@ public:
 	 * @param[in] offset   start of the ring buffer inside mapped page
 	 * @param[in] size     size of the ring buffer
 	 */
-	RingBufferOutBase(int domId, int port, int ref, int offset, size_t size) :
+	RingBufferOutBase(domid_t domId, evtchn_port_t port, grant_ref_t ref,
+					  int offset, size_t size) :
 		RingBufferBase(domId, port, ref),
 		mPage(static_cast<Page*>(mBuffer.get())),
 		mEventBuffer(reinterpret_cast<Event*>(

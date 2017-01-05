@@ -67,7 +67,7 @@ public:
 	 * received
 	 * @param[in] errorCallback callback which is called when an error occurs
 	 */
-	XenEvtchn(int domId, int port, Callback callback,
+	XenEvtchn(domid_t domId, evtchn_port_t port, Callback callback,
 			  ErrorCallback errorCallback = nullptr);
 	XenEvtchn(const XenEvtchn&) = delete;
 	XenEvtchn& operator=(XenEvtchn const&) = delete;
@@ -91,13 +91,13 @@ public:
 	/**
 	 * Returns event channel port
 	 */
-	int getPort() const { return mPort; }
+	xenevtchn_port_or_error_t getPort() const { return mPort; }
 
 private:
 
 	const int cPoolEventTimeoutMs = 100;
 
-	int mPort;
+	xenevtchn_port_or_error_t mPort;
 
 	Callback mCallback;
 	ErrorCallback mErrorCallback;
@@ -109,7 +109,7 @@ private:
 
 	Log mLog;
 
-	void init(int domId, int port);
+	void init(domid_t domId, evtchn_port_t port);
 	void release();
 	void eventThread();
 	bool waitEvent();

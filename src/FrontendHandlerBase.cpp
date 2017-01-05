@@ -51,7 +51,7 @@ namespace XenBackend {
  * FrontendHandlerBase
  ******************************************************************************/
 
-FrontendHandlerBase::FrontendHandlerBase(int domId,
+FrontendHandlerBase::FrontendHandlerBase(domid_t domId,
 										 BackendBase& backend,
 										 int id) :
 	mId(id),

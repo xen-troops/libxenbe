@@ -48,18 +48,17 @@ XenGnttab::~XenGnttab()
  * XenGnttabBuffer
  ******************************************************************************/
 
-XenGnttabBuffer::XenGnttabBuffer(int domId, uint32_t ref, int prot) :
+XenGnttabBuffer::XenGnttabBuffer(domid_t domId, grant_ref_t ref, int prot) :
 		XenGnttabBuffer(domId, &ref, 1, prot)
 {
 
 }
 
-XenGnttabBuffer::XenGnttabBuffer(int domId, const uint32_t* refs, size_t count,
-								 int prot) :
-	mDomId(domId),
+XenGnttabBuffer::XenGnttabBuffer(domid_t domId, const grant_ref_t* refs,
+								 size_t count, int prot) :
 	mLog("XenGnttabBuffer")
 {
-	init(refs, count, prot);
+	init(domId, refs, count, prot);
 }
 
 XenGnttabBuffer::~XenGnttabBuffer()
@@ -71,7 +70,8 @@ XenGnttabBuffer::~XenGnttabBuffer()
  * Private
  ******************************************************************************/
 
-void XenGnttabBuffer::init(const uint32_t* refs, size_t count, int prot)
+void XenGnttabBuffer::init(domid_t domId, const grant_ref_t* refs,
+						   size_t count, int prot)
 {
 	static XenGnttab gnttab;
 
@@ -79,12 +79,12 @@ void XenGnttabBuffer::init(const uint32_t* refs, size_t count, int prot)
 	mBuffer = nullptr;
 	mCount = count;
 
-	DLOG(mLog, DEBUG) << "Create grant table buffer, dom: " << mDomId
+	DLOG(mLog, DEBUG) << "Create grant table buffer, dom: " << domId
 					  << ", count: " << count << ", ref: " << *refs;
 
 
-	mBuffer = xengnttab_map_domain_grant_refs(mHandle, count, mDomId,
-											  const_cast<uint32_t*>(refs),
+	mBuffer = xengnttab_map_domain_grant_refs(mHandle, count, domId,
+											  const_cast<grant_ref_t*>(refs),
 											  PROT_READ | PROT_WRITE);
 
 	if (!mBuffer)
@@ -96,7 +96,7 @@ void XenGnttabBuffer::init(const uint32_t* refs, size_t count, int prot)
 
 void XenGnttabBuffer::release()
 {
-	DLOG(mLog, DEBUG) << "Delete grant table buffer, dom: " << mDomId;
+	DLOG(mLog, DEBUG) << "Delete grant table buffer";
 
 	if (mBuffer)
 	{

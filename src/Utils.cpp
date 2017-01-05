@@ -32,7 +32,7 @@ namespace XenBackend {
  * Public
  ******************************************************************************/
 
-string Utils::logDomId(int domId, int id)
+string Utils::logDomId(domid_t domId, int id)
 {
 	return string("Dom(" + to_string(domId) + "/" + to_string(id) + ")");
 }

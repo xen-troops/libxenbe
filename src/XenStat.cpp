@@ -43,9 +43,9 @@ XenStat::~XenStat()
  * Public
  ******************************************************************************/
 
-vector<int32_t> XenStat::getRunningDoms()
+vector<domid_t> XenStat::getRunningDoms()
 {
-	vector<int32_t> runningDomains;
+	vector<domid_t> runningDomains;
 
 	vector<xc_domaininfo_t> domInfos;
 
@@ -62,9 +62,9 @@ vector<int32_t> XenStat::getRunningDoms()
 	return runningDomains;
 }
 
-vector<int32_t> XenStat::getExistingDoms()
+vector<domid_t> XenStat::getExistingDoms()
 {
-	vector<int32_t> existingDomains;
+	vector<domid_t> existingDomains;
 
 	vector<xc_domaininfo_t> domInfos;
 
