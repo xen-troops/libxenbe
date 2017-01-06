@@ -27,8 +27,8 @@
 #include <sstream>
 
 /***************************************************************************//**
- * @defgroup Log
- * Backend log.
+ * @defgroup log Backend log
+ *
  * Special macros are designed to show logs: LOG() and DLOG().
  * DLOG is compiled to void in release build (NDEBUG is defined) and can be used
  * in time critical path. These macros returns a string stream object thus basic
@@ -81,7 +81,7 @@
  * @param[in] instance log instance (XenBackend::Log) or <i>const char*</i> or
  *                         <i>nullptr</i>
  * @param[in] level    log level
- * @ingroup Log
+ * @ingroup log
  */
 #define LOG(instance, level) \
 	XenBackend::LogLine().get(instance, __FILENAME__, __LINE__, \
@@ -94,7 +94,7 @@
  * @param[in] instance log instance (XenBackend::Log) or <i>const char*</i> or
  *                         <i>nullptr</i>
  * @param[in] level    log level
- * @ingroup Log
+ * @ingroup log
  */
 #ifndef NDEBUG
 
@@ -111,7 +111,7 @@ namespace XenBackend {
 
 /**
  * Log levels.
- * @ingroup Log
+ * @ingroup log
  */
 enum class LogLevel
 {
@@ -122,6 +122,7 @@ enum class LogLevel
 class LogVoid
 {
 public:
+
 	LogVoid() { }
 	void operator&(std::ostream&) { }
 };
@@ -130,11 +131,12 @@ public:
 
 /***************************************************************************//**
  * Log instance.
- * @ingroup Log
+ * @ingroup log
  ******************************************************************************/
 class Log
 {
 public:
+
 	/**
 	 * @param[in] name        module name which will be displayed in the log
 	 * @param[in] level       log level for this module
@@ -198,6 +200,7 @@ private:
 class LogLine
 {
 public:
+
 	LogLine();
 	virtual ~LogLine();
 
@@ -207,6 +210,7 @@ public:
 							LogLevel level = LogLevel::logDEBUG);
 
 private:
+
 	static size_t sAlignmentLength;
 
 	std::ostringstream mStream;

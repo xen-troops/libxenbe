@@ -35,7 +35,7 @@ typedef std::function<void(const std::exception&)> ErrorCallback;
 
 /***************************************************************************//**
  * Base class for all Xen exception.
- * @ingroup Xen
+ * @ingroup xen
  ******************************************************************************/
 class XenException : public std::exception
 {

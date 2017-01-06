@@ -53,7 +53,7 @@ namespace XenBackend {
 
 FrontendHandlerBase::FrontendHandlerBase(const string& name,
 										 BackendBase& backend,
-										 bool waitForInitialized,
+										 bool waitForInitialising,
 										 domid_t domId,
 										 int id) :
 	mId(id),
@@ -62,7 +62,7 @@ FrontendHandlerBase::FrontendHandlerBase(const string& name,
 	mBackendState(XenbusStateUnknown),
 	mFrontendState(XenbusStateUnknown),
 	mXenStore(bind(&FrontendHandlerBase::onError, this, _1)),
-	mWaitForFrontendInitialising(waitForInitialized),
+	mWaitForFrontendInitialising(waitForInitialising),
 	mLog(name.empty() ? "Backend" : name)
 {
 	mLogId = Utils::logDomId(mDomId, mId) + " - ";

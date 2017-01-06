@@ -53,6 +53,8 @@ namespace XenBackend {
 atomic<LogLevel> Log::sCurrentLevel(LogLevel::logINFO);
 atomic_bool Log::sShowFileAndLine(false);
 
+/// @cond HIDDEN_SYMBOLS
+
 size_t LogLine::sAlignmentLength = 0;
 
 /*******************************************************************************
@@ -192,5 +194,7 @@ string LogLine::nowTime()
 
 	return ss.str();
 }
+
+/// @endcond
 
 }
