@@ -131,13 +131,6 @@ protected:
 	virtual void onBind() = 0;
 
 	/**
-	 * Is called when the frontend is being deleted.
-	 * The client may override this method to perform some cleaning operation
-	 * when frontend is being deleted.
-	 */
-	virtual void onDelete() {}
-
-	/**
 	 * Adds new ring buffer to the frontend handler.
 	 * @param[in] ringBuffer the ring buffer instance
 	 */

@@ -82,11 +82,7 @@ FrontendHandlerBase::FrontendHandlerBase(const string& name,
 
 FrontendHandlerBase::~FrontendHandlerBase()
 {
-	onDelete();
-
-	// stop is required here as inherited destructor of ring buffer may delete
-	// may delete some objects required on received command
-
+	// stop is required to prevent calling processRequest during deletion
 	for(auto ringBuffer : mRingBuffers)
 	{
 		ringBuffer->stop();
