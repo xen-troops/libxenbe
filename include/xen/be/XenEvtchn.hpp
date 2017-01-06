@@ -106,6 +106,7 @@ private:
 
 	std::thread mThread;
 	std::atomic_bool mTerminate;
+	std::atomic_bool mTerminated;
 
 	Log mLog;
 

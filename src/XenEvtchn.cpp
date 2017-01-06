@@ -40,6 +40,7 @@ XenEvtchn::XenEvtchn(domid_t domId, evtchn_port_t port, Callback callback,
 	mCallback(callback),
 	mErrorCallback(errorCallback),
 	mTerminate(false),
+	mTerminated(true),
 	mLog("XenEvtchn")
 {
 	try
@@ -68,7 +69,13 @@ void XenEvtchn::start()
 {
 	DLOG(mLog, DEBUG) << "Start event channel, port: " << mPort;
 
+	if (!mTerminated)
+	{
+		throw XenEvtchnException("Event channel is already started");
+	}
+
 	mTerminate = false;
+	mTerminated = false;
 
 	mThread = thread(&XenEvtchn::eventThread, this);
 }
@@ -158,6 +165,8 @@ void XenEvtchn::eventThread()
 			LOG(mLog, ERROR) << e.what();
 		}
 	}
+
+	mTerminated = true;
 }
 
 bool XenEvtchn::waitEvent()
