@@ -85,11 +85,14 @@ class FrontendHandlerBase
 {
 public:
 	/**
-	 * @param[in] domId      frontend domain id
+	 * @param[in] name       optional frontend name
 	 * @param[in] backend    reference to the backend instance
+	 * @param[in] domId      frontend domain id
 	 * @param[in] id         frontend instance id
 	 */
-	FrontendHandlerBase(domid_t domId, BackendBase& backend, int id = 0);
+	FrontendHandlerBase(const std::string& name,BackendBase& backend,
+						bool waitForInitialized, domid_t domId, int id = 0);
+
 	virtual ~FrontendHandlerBase();
 
 	/**
@@ -138,6 +141,19 @@ protected:
 	 */
 	void addRingBuffer(RingBufferPtr ringBuffer);
 
+	/**
+	 * Sets backend state.
+	 * @param[in] state new state to set
+	 */
+	void setBackendState(xenbus_state state);
+
+	/**
+	 * Called when the frontend state is changed. This method can be overridden
+	 * in order to implement custom frontend behavior.
+	 * @param[in] state new state to set
+	 */
+	virtual void frontendStateChanged(xenbus_state state);
+
 private:
 
 	int mId;
@@ -167,9 +183,7 @@ private:
 	void initXenStorePathes();
 	void checkTerminatedChannels();
 	void frontendPathChanged(const std::string& path);
-	void frontendStateChanged(xenbus_state state);
 	void onError(const std::exception& e);
-	void setBackendState(xenbus_state state);
 };
 
 typedef std::shared_ptr<FrontendHandlerBase> FrontendHandlerPtr;

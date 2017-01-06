@@ -79,11 +79,13 @@ class BackendBase
 {
 public:
 	/**
-	 * @param[in] domId      domain id
+	 * @param[in] name       optional backend name
 	 * @param[in] deviceName device name
+	 * @param[in] domId      domain id
 	 * @param[in] id         instance id
 	 */
-	BackendBase(domid_t domId, const std::string& deviceName, int id = 0);
+	BackendBase(const std::string& name, const std::string& deviceName,
+				domid_t domId, int id = 0);
 	virtual ~BackendBase();
 
 	/**

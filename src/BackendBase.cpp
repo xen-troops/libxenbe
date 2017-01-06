@@ -61,7 +61,8 @@ namespace XenBackend {
  * BackendBase
  ******************************************************************************/
 
-BackendBase::BackendBase(domid_t domId, const string& deviceName, int id) :
+BackendBase::BackendBase(const string& name, const string& deviceName,
+						 domid_t domId, int id) :
 	mId(id),
 	mDomId(domId),
 	mDeviceName(deviceName),
@@ -69,7 +70,7 @@ BackendBase::BackendBase(domid_t domId, const string& deviceName, int id) :
 	mXenStat(),
 	mTerminate(false),
 	mTerminated(true),
-	mLog("Backend")
+	mLog(name.empty() ? "Backend" : name)
 {
 	LOG(mLog, DEBUG) << "Create backend: " << deviceName << ", " << mId;
 }

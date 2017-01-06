@@ -51,8 +51,10 @@ namespace XenBackend {
  * FrontendHandlerBase
  ******************************************************************************/
 
-FrontendHandlerBase::FrontendHandlerBase(domid_t domId,
+FrontendHandlerBase::FrontendHandlerBase(const string& name,
 										 BackendBase& backend,
+										 bool waitForInitialized,
+										 domid_t domId,
 										 int id) :
 	mId(id),
 	mDomId(domId),
@@ -60,8 +62,8 @@ FrontendHandlerBase::FrontendHandlerBase(domid_t domId,
 	mBackendState(XenbusStateUnknown),
 	mFrontendState(XenbusStateUnknown),
 	mXenStore(bind(&FrontendHandlerBase::onError, this, _1)),
-	mWaitForFrontendInitialising(true),
-	mLog("Frontend")
+	mWaitForFrontendInitialising(waitForInitialized),
+	mLog(name.empty() ? "Backend" : name)
 {
 	mLogId = Utils::logDomId(mDomId, mId) + " - ";
 
@@ -137,6 +139,80 @@ void FrontendHandlerBase::addRingBuffer(RingBufferPtr ringBuffer)
 	mRingBuffers.push_back(ringBuffer);
 }
 
+void FrontendHandlerBase::setBackendState(xenbus_state state)
+{
+	lock_guard<mutex> lock(mMutex);
+
+	if (state == mBackendState)
+	{
+		return;
+	}
+
+	LOG(mLog, INFO) << mLogId << "Set backend state to: "
+					<< Utils::logState(state);
+
+	auto path = mXsBackendPath + "/state";
+
+	mBackendState = state;
+
+	mXenStore.writeInt(path, state);
+}
+
+void FrontendHandlerBase::frontendStateChanged(xenbus_state state)
+{
+	LOG(mLog, INFO) << mLogId << "Frontend state changed to: "
+					<< Utils::logState(state);
+
+	if (mWaitForFrontendInitialising && state != XenbusStateInitialising)
+	{
+		LOG(mLog, INFO) << mLogId << "Wait for frontend initialising";
+
+		return;
+	}
+
+	mWaitForFrontendInitialising = false;
+
+	switch(state)
+	{
+	case XenbusStateInitialising:
+
+		if (mBackendState != XenbusStateInitialising &&
+			mBackendState != XenbusStateInitWait)
+		{
+			LOG(mLog, WARNING) << mLogId << "Frontend restarted";
+
+			setBackendState(XenbusStateClosing);
+		}
+		else
+		{
+			setBackendState(XenbusStateInitWait);
+		}
+
+		break;
+
+	case XenbusStateInitialised:
+
+		onBind();
+
+		setBackendState(XenbusStateConnected);
+
+		break;
+
+	case XenbusStateClosing:
+	case XenbusStateClosed:
+
+		if (mBackendState != XenbusStateInitialising)
+		{
+			setBackendState(XenbusStateClosing);
+		}
+
+		break;
+
+	default:
+		break;
+	}
+}
+
 /*******************************************************************************
  * Private
  ******************************************************************************/
@@ -175,15 +251,6 @@ void FrontendHandlerBase::frontendPathChanged(const string& path)
 
 		mFrontendState = state;
 
-		if (mWaitForFrontendInitialising && state != XenbusStateInitialising)
-		{
-			LOG(mLog, INFO) << mLogId << "Wait for frontend initialising";
-
-			return;
-		}
-
-		mWaitForFrontendInitialising = false;
-
 		frontendStateChanged(state);
 	}
 	catch(const exception& e)
@@ -194,73 +261,11 @@ void FrontendHandlerBase::frontendPathChanged(const string& path)
 	}
 }
 
-void FrontendHandlerBase::frontendStateChanged(xenbus_state state)
-{
-	LOG(mLog, INFO) << mLogId << "Frontend state changed to: "
-					<< Utils::logState(state);
-
-	switch(state)
-	{
-	case XenbusStateInitialising:
-
-		if (mBackendState != XenbusStateInitialising &&
-			mBackendState != XenbusStateInitWait)
-		{
-			LOG(mLog, WARNING) << mLogId << "Frontend restarted";
-
-			setBackendState(XenbusStateClosing);
-		}
-		else
-		{
-			setBackendState(XenbusStateInitWait);
-		}
-
-		break;
-
-	case XenbusStateInitialised:
-
-		onBind();
-
-		setBackendState(XenbusStateConnected);
-
-		break;
-
-	case XenbusStateClosing:
-	case XenbusStateClosed:
-
-		setBackendState(XenbusStateClosing);
-
-		break;
-
-	default:
-		break;
-	}
-}
-
 void FrontendHandlerBase::onError(const std::exception& e)
 {
 	LOG(mLog, ERROR) << mLogId << e.what();
 
 	setBackendState(XenbusStateClosing);
-}
-
-void FrontendHandlerBase::setBackendState(xenbus_state state)
-{
-	lock_guard<mutex> lock(mMutex);
-
-	if (state == mBackendState)
-	{
-		return;
-	}
-
-	LOG(mLog, INFO) << mLogId << "Set backend state to: "
-					<< Utils::logState(state);
-
-	auto path = mXsBackendPath + "/state";
-
-	mBackendState = state;
-
-	mXenStore.writeInt(path, state);
 }
 
 }
