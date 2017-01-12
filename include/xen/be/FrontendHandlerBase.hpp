@@ -93,7 +93,7 @@ public:
 	 * @param[in] id                  frontend instance id
 	 */
 	FrontendHandlerBase(const std::string& name,BackendBase& backend,
-						bool waitForInitialising, domid_t domId, int id = 0);
+						domid_t domId, int id = 0);
 
 	virtual ~FrontendHandlerBase();
 
@@ -118,9 +118,9 @@ public:
 	XenStore& getXenStore() {  return mXenStore; }
 
 	/**
-	 * Returns backend state
+	 * Check if frontend is terminated
 	 */
-	xenbus_state getBackendState();
+	bool isTerminated();
 
 protected:
 	/**
@@ -137,6 +137,11 @@ protected:
 	void addRingBuffer(RingBufferPtr ringBuffer);
 
 	/**
+	 * Returns current backend state.
+	 */
+	xenbus_state getBackendState() const { return mBackendState; }
+
+	/**
 	 * Sets backend state.
 	 * @param[in] state new state to set
 	 */
@@ -147,7 +152,7 @@ protected:
 	 * in order to implement custom frontend behavior.
 	 * @param[in] state new state to set
 	 */
-	virtual void frontendStateChanged(xenbus_state state);
+	virtual void onFrontendStateChanged(xenbus_state state);
 
 private:
 
@@ -163,9 +168,7 @@ private:
 	std::string mXsBackendPath;
 	std::string mXsFrontendPath;
 
-	std::list<RingBufferPtr> mRingBuffers;
-
-	bool mWaitForFrontendInitialising;
+	std::vector<RingBufferPtr> mRingBuffers;
 
 	std::string mLogId;
 
@@ -177,7 +180,7 @@ private:
 
 	void initXenStorePathes();
 	void checkTerminatedChannels();
-	void frontendPathChanged(const std::string& path);
+	void frontendStateChanged(const std::string& path);
 	void onError(const std::exception& e);
 };
 

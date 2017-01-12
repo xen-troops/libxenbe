@@ -222,7 +222,7 @@ void BackendBase::checkTerminatedFrontends()
 {
 	for (auto it = mFrontendHandlers.begin(); it != mFrontendHandlers.end();)
 	{
-		if (it->second->getBackendState() == XenbusStateClosing)
+		if (it->second->isTerminated())
 		{
 			LOG(mLog, INFO) << "Delete terminated frontend: "
 							<< Utils::logDomId(it->first.first,
