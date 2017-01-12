@@ -92,7 +92,7 @@ public:
 	 * @param[in] domId               frontend domain id
 	 * @param[in] id                  frontend instance id
 	 */
-	FrontendHandlerBase(const std::string& name,BackendBase& backend,
+	FrontendHandlerBase(const std::string& name, BackendBase& backend,
 						domid_t domId, int id = 0);
 
 	virtual ~FrontendHandlerBase();
@@ -148,13 +148,48 @@ protected:
 	void setBackendState(xenbus_state state);
 
 	/**
-	 * Called when the frontend state is changed. This method can be overridden
-	 * in order to implement custom frontend behavior.
-	 * @param[in] state new state to set
+	 * Called when the frontend state changed to XenbusStateInitialising
 	 */
-	virtual void onFrontendStateChanged(xenbus_state state);
+	virtual void onStateInitializing();
+
+	/**
+	 * Called when the frontend state changed to XenbusStateInitWait
+	 */
+	virtual void onStateInitWait();
+
+	/**
+	 * Called when the frontend state changed to XenbusStateInitialized
+	 */
+	virtual void onStateInitialized();
+
+	/**
+	 * Called when the frontend state changed to XenbusStateConnected
+	 */
+	virtual void onStateConnected();
+
+	/**
+	 * Called when the frontend state changed to XenbusStateClosing
+	 */
+	virtual void onStateClosing();
+
+	/**
+	 * Called when the frontend state changed to XenbusStateClosed
+	 */
+	virtual void onStateClosed();
+
+	/**
+	 * Called when the frontend state changed to XenbusStateReconfiguring
+	 */
+	virtual void onStateReconfiguring();
+
+	/**
+	 * Called when the frontend state changed to XenbusStateReconfigured
+	 */
+	virtual void onStateReconfigured();
 
 private:
+
+	typedef void(FrontendHandlerBase::*StateFn)();
 
 	int mId;
 	domid_t mDomId;
@@ -181,6 +216,7 @@ private:
 	void initXenStorePathes();
 	void checkTerminatedChannels();
 	void frontendStateChanged(const std::string& path);
+	void onFrontendStateChanged(xenbus_state state);
 	void onError(const std::exception& e);
 };
 

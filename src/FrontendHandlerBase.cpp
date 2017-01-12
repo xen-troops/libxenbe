@@ -43,6 +43,7 @@ using std::stoi;
 using std::string;
 using std::stringstream;
 using std::to_string;
+using std::unordered_map;
 using std::vector;
 
 namespace XenBackend {
@@ -160,47 +161,75 @@ void FrontendHandlerBase::setBackendState(xenbus_state state)
 	mXenStore.writeInt(path, state);
 }
 
-void FrontendHandlerBase::onFrontendStateChanged(xenbus_state state)
+void FrontendHandlerBase::onStateInitializing()
 {
-	switch(state)
+	if (mBackendState == XenbusStateConnected)
 	{
-	case XenbusStateInitialising:
+		LOG(mLog, WARNING) << mLogId << "Frontend restarted";
 
-		if (mBackendState == XenbusStateConnected)
-		{
-			LOG(mLog, WARNING) << mLogId << "Frontend restarted";
+		setBackendState(XenbusStateClosing);
+	}
 
-			setBackendState(XenbusStateClosing);
-		}
+	if (mBackendState == XenbusStateInitialising)
+	{
+		setBackendState(XenbusStateInitWait);
+	}
+}
 
-		if (mBackendState == XenbusStateInitialising)
-		{
-			setBackendState(XenbusStateInitWait);
-		}
+void FrontendHandlerBase::onStateInitWait()
+{
 
-		break;
+}
 
-	case XenbusStateInitialised:
-
+void FrontendHandlerBase::onStateInitialized()
+{
+	if (mBackendState == XenbusStateInitialising ||
+		mBackendState == XenbusStateInitWait)
+	{
 		onBind();
 
 		setBackendState(XenbusStateConnected);
-
-		break;
-
-	case XenbusStateClosing:
-	case XenbusStateClosed:
-
-		if (mBackendState != XenbusStateInitialising)
-		{
-			setBackendState(XenbusStateClosing);
-		}
-
-		break;
-
-	default:
-		break;
 	}
+}
+
+void FrontendHandlerBase::onStateConnected()
+{
+	if (mBackendState == XenbusStateInitialising ||
+		mBackendState == XenbusStateInitWait)
+	{
+		onBind();
+
+		setBackendState(XenbusStateConnected);
+	}
+}
+
+void FrontendHandlerBase::onStateClosing()
+{
+	if (mBackendState == XenbusStateInitialised ||
+		mBackendState == XenbusStateConnected)
+	{
+		setBackendState(XenbusStateClosing);
+	}
+}
+
+void FrontendHandlerBase::onStateClosed()
+{
+	if (mBackendState == XenbusStateInitialised ||
+		mBackendState == XenbusStateConnected)
+	{
+
+		setBackendState(XenbusStateClosing);
+	}
+}
+
+void FrontendHandlerBase::onStateReconfiguring()
+{
+
+}
+
+void FrontendHandlerBase::onStateReconfigured()
+{
+
 }
 
 /*******************************************************************************
@@ -241,25 +270,39 @@ void FrontendHandlerBase::frontendStateChanged(const string& path)
 
 		mFrontendState = state;
 
-		if (mBackendState == XenbusStateClosing ||
-			mBackendState == XenbusStateClosed)
-		{
-			LOG(mLog, WARNING) << mLogId << "Ignore frontend state: "
-							<< Utils::logState(state);
-		}
-		else
-		{
-			LOG(mLog, INFO) << mLogId << "Frontend state changed to: "
+		LOG(mLog, INFO) << mLogId << "Frontend state changed to: "
 							<< Utils::logState(state);
 
-			onFrontendStateChanged(state);
-		}
+		onFrontendStateChanged(mFrontendState);
 	}
 	catch(const exception& e)
 	{
 		LOG(mLog, ERROR) << mLogId << e.what();
 
 		setBackendState(XenbusStateClosing);
+	}
+}
+
+void FrontendHandlerBase::onFrontendStateChanged(xenbus_state state)
+{
+	static unordered_map<int, StateFn> sStateTable = {
+		{XenbusStateInitialising,  &FrontendHandlerBase::onStateInitializing},
+		{XenbusStateInitWait,      &FrontendHandlerBase::onStateInitWait},
+		{XenbusStateInitialised,   &FrontendHandlerBase::onStateInitialized},
+		{XenbusStateConnected,     &FrontendHandlerBase::onStateConnected},
+		{XenbusStateClosing,       &FrontendHandlerBase::onStateClosing},
+		{XenbusStateClosed,        &FrontendHandlerBase::onStateClosed},
+		{XenbusStateReconfiguring, &FrontendHandlerBase::onStateReconfiguring},
+		{XenbusStateReconfigured,  &FrontendHandlerBase::onStateReconfigured},
+	};
+
+	if (state < sStateTable.size())
+	{
+		(this->*sStateTable.at(state))();
+	}
+	else
+	{
+		LOG(mLog, WARNING) << mLogId << "Invalid state: " << state;
 	}
 }
 
