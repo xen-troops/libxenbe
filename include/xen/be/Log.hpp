@@ -217,7 +217,7 @@ private:
 	LogLevel mCurrentLevel;
 	LogLevel mSetLevel;
 
-	std::mutex mMutex;
+	static std::mutex mMutex;
 
 	void putHeader(const std::string& header);
 	std::string nowTime();

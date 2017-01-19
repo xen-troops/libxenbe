@@ -94,6 +94,8 @@ bool Log::setLogLevel(const string& strLevel)
  * LogLine
  ******************************************************************************/
 
+mutex LogLine::mMutex;
+
 LogLine::LogLine()
 {
 
@@ -119,8 +121,6 @@ LogLine::~LogLine()
 ostringstream& LogLine::get(const Log& log, const char* file,
 							int line, LogLevel level)
 {
-	lock_guard<mutex> lock(mMutex);
-
 	mCurrentLevel = level;
 	mSetLevel = log.mLevel;
 
