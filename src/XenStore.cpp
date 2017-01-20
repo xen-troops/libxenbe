@@ -36,6 +36,7 @@ namespace XenBackend {
  ******************************************************************************/
 
 XenStore::XenStore(ErrorCallback errorCallback) :
+	mXsHandle(nullptr),
 	mErrorCallback(errorCallback),
 	mCheckWatchResult(false),
 	mLog("XenStore")
@@ -107,7 +108,7 @@ string XenStore::readString(const string& path)
 
 	if (!pData)
 	{
-		throw XenStoreException("Can't read string from: " + path);
+		throw XenStoreException("Can't read from: " + path);
 	}
 
 	string result(pData);
@@ -239,6 +240,8 @@ void XenStore::init()
 		throw XenStoreException("Can't open xs daemon");
 	}
 
+	mPollFd.reset(new PollFd(xs_fileno(mXsHandle), POLLIN));
+
 	LOG(mLog, DEBUG) << "Create xen store";
 }
 
@@ -258,7 +261,7 @@ string XenStore::checkWatches()
 
 	if (!mCheckWatchResult)
 	{
-		mCheckWatchResult = pollXsWatchFd();
+		mCheckWatchResult = mPollFd->poll();
 	}
 
 	if (mCheckWatchResult)
@@ -285,25 +288,6 @@ string XenStore::checkXsWatch()
 	}
 
 	return path;
-}
-
-bool XenStore::pollXsWatchFd()
-{
-	pollfd fds = { .fd = xs_fileno(mXsHandle), .events = POLLIN};
-
-	auto ret = poll(&fds, 1, cPollWatchesTimeoutMs);
-
-	if (ret < 0)
-	{
-		throw XenStoreException("Can't poll watches");
-	}
-
-	if (ret > 0)
-	{
-		return true;
-	}
-
-	return false;
 }
 
 void XenStore::watchesThread()
@@ -399,6 +383,8 @@ void XenStore::clearWatches()
 
 void XenStore::waitWatchesThreadFinished()
 {
+	mPollFd->stop();
+
 	if (mThread.joinable())
 	{
 		mThread.join();

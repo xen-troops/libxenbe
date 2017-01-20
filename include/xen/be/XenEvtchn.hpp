@@ -30,6 +30,7 @@ extern "C" {
 
 #include "XenException.hpp"
 #include "Log.hpp"
+#include "Utils.hpp"
 
 namespace XenBackend {
 
@@ -95,25 +96,19 @@ public:
 
 private:
 
-	const int cPoolEventTimeoutMs = 100;
-
 	xenevtchn_port_or_error_t mPort;
-
+	xenevtchn_handle *mHandle;
 	Callback mCallback;
 	ErrorCallback mErrorCallback;
-
-	xenevtchn_handle *mHandle;
+	std::atomic_bool mStarted;
+	Log mLog;
 
 	std::thread mThread;
-	std::atomic_bool mTerminate;
-	std::atomic_bool mTerminated;
-
-	Log mLog;
+	std::unique_ptr<PollFd> mPollFd;
 
 	void init(domid_t domId, evtchn_port_t port);
 	void release();
 	void eventThread();
-	bool waitEvent();
 };
 
 }

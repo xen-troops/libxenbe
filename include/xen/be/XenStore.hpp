@@ -37,6 +37,7 @@ extern "C" {
 
 #include "XenException.hpp"
 #include "Log.hpp"
+#include "Utils.hpp"
 
 namespace XenBackend {
 
@@ -143,20 +144,19 @@ public:
 
 private:
 
-	const int cPollWatchesTimeoutMs = 100;
-
-	ErrorCallback mErrorCallback;
-
 	xs_handle*	mXsHandle;
+	ErrorCallback mErrorCallback;
+	bool mCheckWatchResult;
+	Log mLog;
 
 	std::unordered_map<std::string, WatchCallback> mWatches;
 	std::list<std::string> mInitNotifyWatches;
 
 	std::thread mThread;
-	std::mutex mMutex;
 	std::mutex mItfMutex;
-	bool mCheckWatchResult;
-	Log mLog;
+	std::mutex mMutex;
+
+	std::unique_ptr<PollFd> mPollFd;
 
 	void init();
 	void release();
@@ -165,7 +165,6 @@ private:
 	bool isWatchesEmpty();
 	std::string checkWatches();
 	std::string checkXsWatch();
-	bool pollXsWatchFd();
 	std::string getInitNotifyPath();
 	WatchCallback getWatchCallback(std::string& path);
 	void clearWatches();

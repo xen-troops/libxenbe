@@ -37,10 +37,10 @@ namespace XenBackend {
 XenEvtchn::XenEvtchn(domid_t domId, evtchn_port_t port, Callback callback,
 					 ErrorCallback errorCallback) :
 	mPort(-1),
+	mHandle(nullptr),
 	mCallback(callback),
 	mErrorCallback(errorCallback),
-	mTerminate(false),
-	mTerminated(true),
+	mStarted(false),
 	mLog("XenEvtchn")
 {
 	try
@@ -69,13 +69,12 @@ void XenEvtchn::start()
 {
 	DLOG(mLog, DEBUG) << "Start event channel, port: " << mPort;
 
-	if (!mTerminated)
+	if (mStarted)
 	{
 		throw XenEvtchnException("Event channel is already started");
 	}
 
-	mTerminate = false;
-	mTerminated = false;
+	mStarted = true;
 
 	mThread = thread(&XenEvtchn::eventThread, this);
 }
@@ -84,7 +83,7 @@ void XenEvtchn::stop()
 {
 	DLOG(mLog, DEBUG) << "Stop event channel, port: " << mPort;
 
-	mTerminate = true;
+	mPollFd->stop();
 
 	if (mThread.joinable())
 	{
@@ -122,6 +121,8 @@ void XenEvtchn::init(domid_t domId, evtchn_port_t port)
 		throw XenEvtchnException("Can't bind event channel: " + to_string(port));
 	}
 
+	mPollFd.reset(new PollFd(xenevtchn_fd(mHandle), POLLIN));
+
 	DLOG(mLog, DEBUG) << "Create event channel, dom: " << domId
 					  << ", remote port: " << port << ", local port: "
 					  << mPort;
@@ -146,12 +147,30 @@ void XenEvtchn::eventThread()
 {
 	try
 	{
-		while(!mTerminate)
+		while(mCallback && mPollFd->poll())
 		{
-			if (waitEvent() && mCallback)
+			auto port = xenevtchn_pending(mHandle);
+
+			if (port < 0)
 			{
-				mCallback();
+				throw XenEvtchnException("Can't get pending port");
 			}
+
+			if (xenevtchn_unmask(mHandle, port) < 0)
+			{
+				throw XenEvtchnException("Can't unmask event channel");
+			}
+
+			if (port != mPort)
+			{
+				throw XenEvtchnException("Error port number: " +
+										 to_string(port) + ", expected: " +
+										 to_string(mPort));
+			}
+
+			DLOG(mLog, DEBUG) << "Event received, port: " << mPort;
+
+			mCallback();
 		}
 	}
 	catch(const exception& e)
@@ -166,50 +185,7 @@ void XenEvtchn::eventThread()
 		}
 	}
 
-	mTerminated = true;
-}
-
-bool XenEvtchn::waitEvent()
-{
-	pollfd fds;
-
-	fds.fd = xenevtchn_fd(mHandle);
-	fds.events = POLLIN;
-
-	auto ret = poll(&fds, 1, cPoolEventTimeoutMs);
-
-	if (ret < 0)
-	{
-		throw XenEvtchnException("Can't poll watches");
-	}
-
-	if (ret > 0)
-	{
-		auto port = xenevtchn_pending(mHandle);
-
-		if (port < 0)
-		{
-			throw XenEvtchnException("Can't get pending port");
-		}
-
-		if (xenevtchn_unmask(mHandle, port) < 0)
-		{
-			throw XenEvtchnException("Can't unmask event channel");
-		}
-
-		if (port != mPort)
-		{
-			throw XenEvtchnException("Error port number: " +
-									 to_string(port) + ", expected: " +
-									 to_string(mPort));
-		}
-
-		DLOG(mLog, DEBUG) << "Event received, port: " << mPort;
-
-		return true;
-	}
-
-	return false;
+	mStarted = false;
 }
 
 }

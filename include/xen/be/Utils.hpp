@@ -23,6 +23,9 @@
 
 #include <string>
 
+#include <poll.h>
+#include <unistd.h>
+
 extern "C" {
 #include <xen/xen.h>
 #include <xen/io/xenbus.h>
@@ -52,6 +55,55 @@ public:
 	 * @return string representation of xen domain state
 	 */
 	static std::string logState(xenbus_state state);
+};
+
+/***************************************************************************//**
+ * Class to poll file descriptor.
+ * It can be interripted by calling stop() method.
+ * @ingroup backend
+ ******************************************************************************/
+class PollFd
+{
+public:
+
+	/**
+	 * @param fd     file descriptor
+	 * @param events events to poll (same as in system poll function)
+	 */
+	PollFd(int fd, short int events);
+	~PollFd();
+
+	/**
+	 * Polls the file descriptors for defined events
+	 * @return <i>true</i> if one of defined events occurred and <i>false</i>
+	 * if the method was interrupted by calling stop()
+	 */
+	bool poll();
+
+	/**
+	 * Stops polling
+	 */
+	void stop();
+
+private:
+
+	enum PipeType
+	{
+		READ = 0,
+		WRITE = 1
+	};
+
+	enum PollIndex
+	{
+		FILE = 0,
+		PIPE = 1
+	};
+
+	pollfd mFds[2];
+	int mPipeFds[2];
+
+	void init(int fd, short int events);
+	void release();
 };
 
 }

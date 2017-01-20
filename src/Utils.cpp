@@ -22,6 +22,9 @@
 
 #include <vector>
 
+#include "XenException.hpp"
+
+using std::exception;
 using std::string;
 using std::to_string;
 using std::vector;
@@ -29,7 +32,7 @@ using std::vector;
 namespace XenBackend {
 
 /*******************************************************************************
- * Public
+ * Utils
  ******************************************************************************/
 
 string Utils::logDomId(domid_t domId, int id)
@@ -52,6 +55,94 @@ string Utils::logState(xenbus_state state)
 	else
 	{
 		return "[" + strStates[state] + "]";
+	}
+}
+
+/*******************************************************************************
+ * PollFd
+ ******************************************************************************/
+
+PollFd::PollFd(int fd, short int events)
+{
+	try
+	{
+		init(fd, events);
+	}
+	catch(const exception& e)
+	{
+		release();
+
+		throw;
+	}
+}
+
+PollFd::~PollFd()
+{
+	release();
+}
+
+bool PollFd::poll()
+{
+	mFds[PollIndex::FILE].revents = 0;
+	mFds[PollIndex::PIPE].revents = 0;
+
+	if (::poll(mFds, 2, -1) < 0)
+	{
+		throw XenException("Error polling files");
+	}
+
+	if (mFds[PollIndex::PIPE].revents & POLLIN)
+	{
+		uint8_t data;
+
+		if (read(mFds[PollIndex::PIPE].fd, &data, sizeof(data)) < 0)
+		{
+			throw XenException("Error reading pipe");
+		}
+
+		return false;
+	}
+
+	return true;
+}
+
+void PollFd::stop()
+{
+	uint8_t data = 0xFF;
+
+	if (write(mPipeFds[PipeType::WRITE], &data, sizeof(data)) < 0)
+	{
+		throw XenException("Error writing pipe");
+	}
+}
+
+void PollFd::init(int fd, short int events)
+{
+	mPipeFds[PipeType::READ] = -1;
+	mPipeFds[PipeType::WRITE] = -1;
+
+	if (pipe(mPipeFds) < 0)
+	{
+		throw XenException("Can't create pipe");
+	}
+
+	mFds[PollIndex::FILE].fd = fd;
+	mFds[PollIndex::FILE].events = events;
+
+	mFds[PollIndex::PIPE].fd = mPipeFds[0];
+	mFds[PollIndex::PIPE].events = POLLIN;
+}
+
+void PollFd::release()
+{
+	if (mPipeFds[PipeType::READ] >= 0)
+	{
+		close(mPipeFds[PipeType::READ]);
+	}
+
+	if (mPipeFds[PipeType::WRITE] >= 0)
+	{
+		close(mPipeFds[PipeType::WRITE]);
 	}
 }
 
