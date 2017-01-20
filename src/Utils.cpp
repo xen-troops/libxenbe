@@ -103,6 +103,11 @@ bool PollFd::poll()
 		return false;
 	}
 
+	if (mFds[PollIndex::FILE].revents & (~mFds[PollIndex::FILE].events))
+	{
+		throw XenException("Error reading file");
+	}
+
 	return true;
 }
 
