@@ -35,9 +35,9 @@ namespace XenBackend {
  * Utils
  ******************************************************************************/
 
-string Utils::logDomId(domid_t domId, int id)
+string Utils::logDomId(domid_t domId, uint16_t devId)
 {
-	return string("Dom(" + to_string(domId) + "/" + to_string(id) + ")");
+	return string("Dom(" + to_string(domId) + "/" + to_string(devId) + ")");
 }
 
 string Utils::logState(xenbus_state state)

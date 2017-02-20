@@ -44,10 +44,10 @@ public:
 	/**
 	 * Returns string which represents domain id and instance id for logging
 	 * @param[in] domId domain id
-	 * @param[in] id    instance id
-	 * @return string representation of domain id and istance id
+	 * @param[in] devId device id
+	 * @return string representation of domain id and device id
 	 */
-	static std::string logDomId(domid_t domId, int id);
+	static std::string logDomId(domid_t domId, uint16_t devId);
 
 	/**
 	 * Returns string representation of xen domain state

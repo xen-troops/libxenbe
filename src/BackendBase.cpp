@@ -62,9 +62,9 @@ namespace XenBackend {
  ******************************************************************************/
 
 BackendBase::BackendBase(const string& name, const string& deviceName,
-						 domid_t domId, int id) :
-	mId(id),
+						 domid_t domId, uint16_t devId) :
 	mDomId(domId),
+	mDevId(devId),
 	mDeviceName(deviceName),
 	mXenStore(),
 	mXenStat(),
@@ -72,7 +72,7 @@ BackendBase::BackendBase(const string& name, const string& deviceName,
 	mTerminated(true),
 	mLog(name.empty() ? "Backend" : name)
 {
-	LOG(mLog, DEBUG) << "Create backend: " << deviceName << ", " << mId;
+	LOG(mLog, DEBUG) << "Create backend: " << deviceName << ", " << mDevId;
 }
 
 BackendBase::~BackendBase()
@@ -81,7 +81,7 @@ BackendBase::~BackendBase()
 
 	mFrontendHandlers.clear();
 
-	LOG(mLog, DEBUG) << "Delete backend: " << mDeviceName << ", " << mId;
+	LOG(mLog, DEBUG) << "Delete backend: " << mDeviceName << ", " << mDevId;
 }
 
 /*******************************************************************************
@@ -92,7 +92,7 @@ void BackendBase::start()
 {
 	if (!mTerminated)
 	{
-		throw BackendException("Alread started");
+		throw BackendException("Already started");
 	}
 
 	mTerminate = false;
@@ -126,12 +126,12 @@ void BackendBase::waitForFinish()
 void BackendBase::addFrontendHandler(FrontendHandlerPtr frontendHandler)
 {
 	FrontendKey key(make_pair(frontendHandler->getDomId(),
-					frontendHandler->getId()));
+					frontendHandler->getDevId()));
 
 	mFrontendHandlers.insert(make_pair(key, frontendHandler));
 }
 
-bool BackendBase::getNewFrontend(domid_t& domId, int& id)
+bool BackendBase::getNewFrontend(domid_t& domId, uint16_t& devId)
 {
 	for (auto dom : mXenStat.getExistingDoms())
 	{
@@ -143,19 +143,19 @@ bool BackendBase::getNewFrontend(domid_t& domId, int& id)
 		string basePath = mXenStore.getDomainPath(dom) +
 						  "/device/" + mDeviceName;
 
-		for (string strInstance : mXenStore.readDirectory(basePath))
+		for (string strDev : mXenStore.readDirectory(basePath))
 		{
-			auto instance = stoi(strInstance);
+			uint16_t dev = stoi(strDev);
 
-			if (mFrontendHandlers.find(make_pair(dom, instance)) ==
+			if (mFrontendHandlers.find(make_pair(dom, dev)) ==
 				mFrontendHandlers.end())
 			{
-				string statePath = basePath + "/" + strInstance + "/state";
+				string statePath = basePath + "/" + strDev + "/state";
 
 				if (mXenStore.checkIfExist(statePath))
 				{
 					domId = dom;
-					id = instance;
+					devId = dev;
 
 					return true;
 				}
@@ -179,11 +179,11 @@ void BackendBase::run()
 		while(!mTerminate)
 		{
 			domid_t domId = 0;
-			int id = 0;
+			uint16_t devId = 0;
 
-			if (getNewFrontend(domId, id))
+			if (getNewFrontend(domId, devId))
 			{
-				createFrontendHandler(make_pair(domId, id));
+				createFrontendHandler(make_pair(domId, devId));
 			}
 
 			checkTerminatedFrontends();

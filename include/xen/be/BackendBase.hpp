@@ -66,10 +66,10 @@ class BackendException : public XenException
  *
  * private:
  *
- *     void onNewFrontend(domid_t domId, int id)
+ *     void onNewFrontend(domid_t domId, uint16_t devId)
  *     {
  *         addFrontendHandler(FrontendHandlerPtr(
- *                            new MyFrontendHandler(domId, *this, id)));
+ *             new MyFrontendHandler("MyFrontend", *this, domId, devId)));
  *     }
  * };
  * @endcode
@@ -82,10 +82,10 @@ public:
 	 * @param[in] name       optional backend name
 	 * @param[in] deviceName device name
 	 * @param[in] domId      domain id
-	 * @param[in] id         instance id
+	 * @param[in] devId      device id
 	 */
 	BackendBase(const std::string& name, const std::string& deviceName,
-				domid_t domId, int id = 0);
+				domid_t domId, uint16_t devId = 0);
 	virtual ~BackendBase();
 
 	/**
@@ -109,9 +109,9 @@ public:
 	const std::string& getDeviceName() const { return mDeviceName; }
 
 	/**
-	 * Returns instance id
+	 * Returns device id
 	 */
-	int getId() const { return mId; }
+	uint16_t getDevId() const { return mDevId; }
 
 	/**
 	 * Returns domain id
@@ -125,10 +125,10 @@ protected:
 	 * override this method.
 	 *
 	 * @param[out] domId domain id
-	 * @param[out] id    instance id
+	 * @param[out] devId device id
 	 * @return <i>true</i> if new frontend is detected
 	 */
-	virtual bool getNewFrontend(domid_t& domId, int& id);
+	virtual bool getNewFrontend(domid_t& domId, uint16_t& devId);
 
 	/**
 	 * Is called when new frontend detected.
@@ -138,7 +138,7 @@ protected:
 	 * @param[in] domId domain id
 	 * @param[in] id    instance id
 	 */
-	virtual void onNewFrontend(domid_t domId, int id) = 0;
+	virtual void onNewFrontend(domid_t domId, uint16_t devId) = 0;
 
 	/**
 	 * Adds new frontend handler
@@ -150,10 +150,10 @@ private:
 
 	const int cPollFrontendIntervalMs = 500; //!< Frontend poll interval in msec
 
-	typedef std::pair<domid_t, int> FrontendKey;
+	typedef std::pair<domid_t, uint16_t> FrontendKey;
 
-	int mId;
 	domid_t mDomId;
+	uint16_t mDevId;
 	std::string mDeviceName;
 	XenStore mXenStore;
 	XenStat mXenStat;

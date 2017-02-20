@@ -55,16 +55,16 @@ namespace XenBackend {
 FrontendHandlerBase::FrontendHandlerBase(const string& name,
 										 BackendBase& backend,
 										 domid_t domId,
-										 int id) :
-	mId(id),
+										 uint16_t devId) :
 	mDomId(domId),
+	mDevId(devId),
 	mBackend(backend),
 	mBackendState(XenbusStateUnknown),
 	mFrontendState(XenbusStateUnknown),
 	mXenStore(bind(&FrontendHandlerBase::onError, this, _1)),
 	mLog(name.empty() ? "Backend" : name)
 {
-	mLogId = Utils::logDomId(mDomId, mId) + " - ";
+	mLogId = Utils::logDomId(mDomId, mDevId) + " - ";
 
 	LOG(mLog, DEBUG) << mLogId << "Create frontend handler";
 
@@ -241,15 +241,16 @@ void FrontendHandlerBase::initXenStorePathes()
 	stringstream ss;
 
 	ss << mXenStore.getDomainPath(mDomId) << "/device/"
-	   << mBackend.getDeviceName() << "/" << mId;
+	   << mBackend.getDeviceName() << "/" << mDevId;
 
 	mXsFrontendPath = ss.str();
 
 	ss.str("");
 	ss.clear();
 
-	ss << mXenStore.getDomainPath(mBackend.getId()) << "/backend/"
-	   << mBackend.getDeviceName() << "/" << mDomId << "/" << mBackend.getId();
+	ss << mXenStore.getDomainPath(mBackend.getDomId()) << "/backend/"
+	   << mBackend.getDeviceName() << "/"
+	   << mDomId << "/" << mBackend.getDevId();
 
 	mXsBackendPath = ss.str();
 

@@ -68,13 +68,13 @@ class XenStore;
  *
  * private:
  *
- *     void onBind(domid_t domId, int id)
+ *     void onBind(domid_t domId, uint16_t devId)
  *     {
  *         auto port = getXenStore().readInt("/path/to/eventChannel/port");
  *         uint32_t ref = getXenStore().readInt("/path/to/ringBuffer/ref);
  *
- *         RingBufferPtr ringBuffer(new MyRingBuffer(id, type,
- *                                                   getDomId(), ref));
+ *         RingBufferPtr ringBuffer(new MyRingBuffer(getDomId(), port, ref));
+ *
  *         addChannel(port, ringBuffer);
  *     }
  * };
@@ -93,7 +93,7 @@ public:
 	 * @param[in] id                  frontend instance id
 	 */
 	FrontendHandlerBase(const std::string& name, BackendBase& backend,
-						domid_t domId, int id = 0);
+						domid_t domId, uint16_t devId = 0);
 
 	virtual ~FrontendHandlerBase();
 
@@ -103,9 +103,9 @@ public:
 	domid_t getDomId() const { return mDomId; }
 
 	/**
-	 * Returns frontend instance id
+	 * Returns frontend device id
 	 */
-	int getId() const {  return mId; }
+	uint16_t getDevId() const {  return mDevId; }
 
 	/**
 	 * Returns frontend xen store base path
@@ -191,8 +191,8 @@ private:
 
 	typedef void(FrontendHandlerBase::*StateFn)();
 
-	int mId;
 	domid_t mDomId;
+	uint16_t mDevId;
 	BackendBase& mBackend;
 
 	xenbus_state mBackendState;
