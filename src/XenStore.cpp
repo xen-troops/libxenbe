@@ -383,7 +383,10 @@ void XenStore::clearWatches()
 
 void XenStore::waitWatchesThreadFinished()
 {
-	mPollFd->stop();
+	if (mPollFd)
+	{
+		mPollFd->stop();
+	}
 
 	if (mThread.joinable())
 	{

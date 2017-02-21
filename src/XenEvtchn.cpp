@@ -83,7 +83,10 @@ void XenEvtchn::stop()
 {
 	DLOG(mLog, DEBUG) << "Stop event channel, port: " << mPort;
 
-	mPollFd->stop();
+	if (mPollFd)
+	{
+		mPollFd->stop();
+	}
 
 	if (mThread.joinable())
 	{
