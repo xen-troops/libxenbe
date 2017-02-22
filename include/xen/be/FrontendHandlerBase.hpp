@@ -108,9 +108,14 @@ public:
 	uint16_t getDevId() const {  return mDevId; }
 
 	/**
+	 * Returns domain name
+	 */
+	std::string getDomName() const {  return mDomName; }
+
+	/**
 	 * Returns frontend xen store base path
 	 */
-	const std::string& getXsFrontendPath() const { return mXsFrontendPath; }
+	std::string getXsFrontendPath() const { return mXsFrontendPath; }
 
 	/**
 	 * Returns reference to the xen store instance accociated with the frontend
@@ -193,6 +198,7 @@ private:
 
 	domid_t mDomId;
 	uint16_t mDevId;
+	std::string mDomName;
 	BackendBase& mBackend;
 
 	xenbus_state mBackendState;

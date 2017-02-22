@@ -70,6 +70,8 @@ FrontendHandlerBase::FrontendHandlerBase(const string& name,
 
 	initXenStorePathes();
 
+	mDomName = mXenStore.readString(mXenStore.getDomainPath(mDomId) + "/name");
+
 	setBackendState(XenbusStateInitialising);
 
 	auto statePath = mXsFrontendPath + "/state";
