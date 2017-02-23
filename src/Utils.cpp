@@ -20,6 +20,7 @@
 
 #include "Utils.hpp"
 
+#include <cstring>
 #include <vector>
 
 #include "XenException.hpp"
@@ -88,7 +89,11 @@ bool PollFd::poll()
 
 	if (::poll(mFds, 2, -1) < 0)
 	{
-		throw XenException("Error polling files");
+		if (errno != EINTR)
+		{
+			throw XenException("Error polling files: " +
+							   string(strerror(errno)));
+		}
 	}
 
 	if (mFds[PollIndex::PIPE].revents & POLLIN)
@@ -97,7 +102,8 @@ bool PollFd::poll()
 
 		if (read(mFds[PollIndex::PIPE].fd, &data, sizeof(data)) < 0)
 		{
-			throw XenException("Error reading pipe");
+			throw XenException("Error reading pipe: " +
+							   string(strerror(errno)));
 		}
 
 		return false;
@@ -117,7 +123,7 @@ void PollFd::stop()
 
 	if (write(mPipeFds[PipeType::WRITE], &data, sizeof(data)) < 0)
 	{
-		throw XenException("Error writing pipe");
+		throw XenException("Error writing pipe: " + string(strerror(errno)));
 	}
 }
 
@@ -128,7 +134,7 @@ void PollFd::init(int fd, short int events)
 
 	if (pipe(mPipeFds) < 0)
 	{
-		throw XenException("Can't create pipe");
+		throw XenException("Can't create pipe: " + string(strerror(errno)));
 	}
 
 	mFds[PollIndex::FILE].fd = fd;
