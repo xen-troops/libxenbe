@@ -15,14 +15,26 @@ set(SOURCES
 	src/XenStore.cpp
 )
 
+set(TEST_SOURCES
+	test/xenStubs/xenctrl.c
+	test/xenStubs/xenevtchn.c
+	test/xenStubs/xenstore.c
+	test/test.cpp
+)
+
 include_directories(
 	include/xen/be
 	${XEN_INCLUDE_PATH}
 )
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11 -Wall")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall")
 
 add_library(xenbe SHARED ${SOURCES})
+
+add_executable(tests ${TEST_SOURCES})
+
+target_link_libraries(tests xenbe pthread)
 
 install(TARGETS xenbe LIBRARY DESTINATION lib)
 
