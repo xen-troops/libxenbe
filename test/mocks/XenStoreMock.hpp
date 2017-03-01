@@ -32,9 +32,9 @@ class XenStoreMock
 {
 public:
 
-	~XenStoreMock();
+	XenStoreMock();
 
-	static XenStoreMock* getInstance();
+	static XenStoreMock* getLastInstance() { return sLastInstance; };
 
 	int getFd() const { return mPipe.getFd(); }
 	void setDomainPath(unsigned int domId, const std::string& path);
@@ -49,9 +49,7 @@ public:
 
 private:
 
-	XenStoreMock() {}
-
-	static XenStoreMock* sInstance;
+	static XenStoreMock* sLastInstance;
 
 	Pipe mPipe;
 

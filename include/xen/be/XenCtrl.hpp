@@ -49,6 +49,7 @@ class XenCtrlException : public XenException
 class XenInterface
 {
 public:
+
 	XenInterface();
 	XenInterface(const XenInterface&) = delete;
 	XenInterface& operator=(XenInterface const&) = delete;
@@ -61,6 +62,7 @@ public:
 	void getDomainsInfo(std::vector<xc_domaininfo_t>& infos);
 
 private:
+
 	const int cDomInfoChunkSize = 64;
 
 	xc_interface* mHandle;

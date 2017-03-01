@@ -27,9 +27,9 @@ class XenGnttabMock
 {
 public:
 
-	~XenGnttabMock();
+	XenGnttabMock();
 
-	static XenGnttabMock* getInstance();
+	static XenGnttabMock* getLastInstance() { return sLastInstance; }
 
 	void* mapGrantRefs(uint32_t count, uint32_t domId, uint32_t *refs);
 	void unmapGrantRefs(void* address, uint32_t count);
@@ -38,9 +38,7 @@ public:
 
 private:
 
-	XenGnttabMock() {}
-
-	static XenGnttabMock* sInstance;
+	static XenGnttabMock* sLastInstance;
 
 	struct MapBuffer
 	{

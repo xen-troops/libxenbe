@@ -41,19 +41,19 @@ using std::vector;
 using XenBackend::XenStore;
 using XenBackend::XenStoreException;
 
-mutex gMutex;
-condition_variable gCondVar;
+static mutex gMutex;
+static condition_variable gCondVar;
 
-int gNumErrors = 0;
-bool gWatchCbk1 = false;
-bool gWatchCbk2 = false;
+static int gNumErrors = 0;
+static bool gWatchCbk1 = false;
+static bool gWatchCbk2 = false;
 
-void errorHandling(const exception& e)
+static void errorHandling(const exception& e)
 {
 	gNumErrors++;
 }
 
-void watchCbk1()
+static void watchCbk1()
 {
 	unique_lock<mutex> lock(gMutex);
 
@@ -62,7 +62,7 @@ void watchCbk1()
 	gCondVar.notify_all();
 }
 
-void watchCbk2()
+static void watchCbk2()
 {
 	unique_lock<mutex> lock(gMutex);
 
@@ -71,7 +71,7 @@ void watchCbk2()
 	gCondVar.notify_all();
 }
 
-void waitForWatch()
+static void waitForWatch()
 {
 	unique_lock<mutex> lock(gMutex);
 
@@ -81,7 +81,7 @@ void waitForWatch()
 TEST_CASE("XenStore", "[xenstore]")
 {
 	XenStore xenStore(errorHandling);
-	auto mock = XenStoreMock::getInstance();
+	auto mock = XenStoreMock::getLastInstance();
 
 	SECTION("Check getting domain path")
 	{
@@ -181,5 +181,10 @@ TEST_CASE("XenStore", "[xenstore]")
 		REQUIRE(gWatchCbk2);
 
 		xenStore.clearWatch(path);
+	}
+
+	SECTION("Check errors")
+	{
+		REQUIRE(gNumErrors == 0);
 	}
 }

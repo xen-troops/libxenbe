@@ -46,7 +46,7 @@ xengnttab_handle* xengnttab_open(xentoollog_logger* logger,
 	xengnttab_handle* xgt = static_cast<xengnttab_handle*>(
 			malloc(sizeof(xengnttab_handle)));
 
-	xgt->mock = XenGnttabMock::getInstance();
+	xgt->mock = new XenGnttabMock();
 
 	return xgt;
 }
@@ -79,24 +79,14 @@ int xengnttab_unmap(xengnttab_handle* xgt, void* start_address, uint32_t count)
 }
 
 /*******************************************************************************
- * XenStoreMock
+ * XenGnttabMock
  ******************************************************************************/
 
-XenGnttabMock* XenGnttabMock::sInstance = nullptr;
+XenGnttabMock* XenGnttabMock::sLastInstance = nullptr;
 
-XenGnttabMock* XenGnttabMock::getInstance()
+XenGnttabMock::XenGnttabMock()
 {
-	if (sInstance == nullptr)
-	{
-		sInstance = new XenGnttabMock();
-	}
-
-	return sInstance;
-}
-
-XenGnttabMock::~XenGnttabMock()
-{
-	sInstance = nullptr;
+	sLastInstance = this;
 }
 
 /*******************************************************************************

@@ -49,6 +49,7 @@ class XenGnttabException : public XenException
 class XenGnttab
 {
 private:
+
 	friend class XenGnttabBuffer;
 
 	XenGnttab();

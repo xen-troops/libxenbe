@@ -27,11 +27,11 @@ using XenBackend::XenGnttabBuffer;
 
 TEST_CASE("XenGnttab", "[xengnttab]")
 {
-	auto mock = XenGnttabMock::getInstance();
-
 	XenGnttabBuffer *xenBuffer;
 
 	xenBuffer = new XenGnttabBuffer(3, 14);
+
+	auto mock = XenGnttabMock::getLastInstance();
 
 	REQUIRE(xenBuffer->size() == mock->getMapBufferSize(xenBuffer->get()));
 
@@ -41,6 +41,8 @@ TEST_CASE("XenGnttab", "[xengnttab]")
 	grant_ref_t refs[count] = { 1, 2, 3, 4, 5 };
 
 	xenBuffer = new XenGnttabBuffer(3, refs, count);
+
+	mock = XenGnttabMock::getLastInstance();
 
 	REQUIRE(xenBuffer->size() == mock->getMapBufferSize(xenBuffer->get()));
 

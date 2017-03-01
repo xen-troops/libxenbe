@@ -11,12 +11,6 @@
 
 struct xc_interface_core
 {
-	int flags;
-	xentoollog_logger *error_handler,   *error_handler_tofree;
-	xentoollog_logger *dombuild_logger, *dombuild_logger_tofree;
-	struct xc_error last_error; /* for xc_get_last_error */
-	FILE *dombuild_logger_file;
-	const char *currently_progress_reporting;
 };
 
 int xc_interface_close(xc_interface *xch)

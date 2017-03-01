@@ -105,4 +105,3 @@ void XenGnttabBuffer::release()
 }
 
 }
-

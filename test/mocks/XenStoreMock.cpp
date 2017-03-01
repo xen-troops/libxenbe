@@ -45,7 +45,7 @@ xs_handle* xs_open(unsigned long flags)
 {
 	xs_handle* h = static_cast<xs_handle*>(malloc(sizeof(xs_handle)));
 
-	h->mock = XenStoreMock::getInstance();
+	h->mock = new XenStoreMock();
 
 	return h;
 }
@@ -182,21 +182,11 @@ char** xs_check_watch(xs_handle* h)
  * XenStoreMock
  ******************************************************************************/
 
-XenStoreMock* XenStoreMock::sInstance = nullptr;
+XenStoreMock* XenStoreMock::sLastInstance = nullptr;
 
-XenStoreMock* XenStoreMock::getInstance()
+XenStoreMock::XenStoreMock()
 {
-	if (sInstance == nullptr)
-	{
-		sInstance = new XenStoreMock();
-	}
-
-	return sInstance;
-}
-
-XenStoreMock::~XenStoreMock()
-{
-	sInstance = nullptr;
+	sLastInstance = this;
 }
 
 /*******************************************************************************
