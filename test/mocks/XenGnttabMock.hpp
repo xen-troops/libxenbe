@@ -1,5 +1,5 @@
 /*
- *  Pipe
+ *  XenGnttabMock
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -18,32 +18,38 @@
  * Copyright (C) 2016 EPAM Systems Inc.
  */
 
-#ifndef TEST_MOCKS_PIPE_HPP_
-#define TEST_MOCKS_PIPE_HPP_
+#ifndef TEST_MOCKS_XENGNTTABMOCK_HPP_
+#define TEST_MOCKS_XENGNTTABMOCK_HPP_
 
-#include <cstddef>
+#include <unordered_map>
 
-class Pipe
+class XenGnttabMock
 {
 public:
 
-	Pipe();
-	~Pipe();
+	~XenGnttabMock();
 
-	int getFd() const { return mFds[PipeType::READ]; }
+	static XenGnttabMock* getInstance();
 
-	void read();
-	void write();
+	void* mapGrantRefs(uint32_t count, uint32_t domId, uint32_t *refs);
+	void unmapGrantRefs(void* address, uint32_t count);
+	size_t getMapBufferSize(void* address);
+	void checkMapBuffers();
 
 private:
 
-	enum PipeType
+	XenGnttabMock() {}
+
+	static XenGnttabMock* sInstance;
+
+	struct MapBuffer
 	{
-		READ = 0,
-		WRITE = 1
+		uint32_t count;
+		uint32_t domId;
+		size_t size;
 	};
 
-	int mFds[2];
+	std::unordered_map<void*, MapBuffer> mMapBuffers;
 };
 
-#endif /* TEST_MOCKS_PIPE_HPP_ */
+#endif /* TEST_MOCKS_XENGNTTABMOCK_HPP_ */

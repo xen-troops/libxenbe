@@ -1,5 +1,5 @@
 /*
- *  Pipe
+ *  Test XenGnttab
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -18,32 +18,31 @@
  * Copyright (C) 2016 EPAM Systems Inc.
  */
 
-#ifndef TEST_MOCKS_PIPE_HPP_
-#define TEST_MOCKS_PIPE_HPP_
+#include <catch.hpp>
 
-#include <cstddef>
+#include "mocks/XenGnttabMock.hpp"
+#include "XenGnttab.hpp"
 
-class Pipe
+using XenBackend::XenGnttabBuffer;
+
+TEST_CASE("XenGnttab", "[xengnttab]")
 {
-public:
+	auto mock = XenGnttabMock::getInstance();
 
-	Pipe();
-	~Pipe();
+	XenGnttabBuffer *xenBuffer;
 
-	int getFd() const { return mFds[PipeType::READ]; }
+	xenBuffer = new XenGnttabBuffer(3, 14);
 
-	void read();
-	void write();
+	REQUIRE(xenBuffer->size() == mock->getMapBufferSize(xenBuffer->get()));
 
-private:
+	delete xenBuffer;
 
-	enum PipeType
-	{
-		READ = 0,
-		WRITE = 1
-	};
+	size_t count = 5;
+	grant_ref_t refs[count] = { 1, 2, 3, 4, 5 };
 
-	int mFds[2];
-};
+	xenBuffer = new XenGnttabBuffer(3, refs, count);
 
-#endif /* TEST_MOCKS_PIPE_HPP_ */
+	REQUIRE(xenBuffer->size() == mock->getMapBufferSize(xenBuffer->get()));
+
+	delete xenBuffer;
+}
