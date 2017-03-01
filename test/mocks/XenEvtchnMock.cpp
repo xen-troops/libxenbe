@@ -26,11 +26,6 @@
 
 #include "XenException.hpp"
 
-struct xenevtchn_handle
-{
-	XenEvtchnMock* mock;
-};
-
 using std::find_if;
 using std::list;
 
@@ -39,6 +34,11 @@ using XenBackend::XenException;
 /*******************************************************************************
  * Xen interface
  ******************************************************************************/
+
+struct xenevtchn_handle
+{
+	XenEvtchnMock* mock;
+};
 
 xenevtchn_handle* xenevtchn_open(struct xentoollog_logger* logger,
 								 unsigned open_flags)

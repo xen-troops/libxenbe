@@ -29,16 +29,16 @@ extern "C" {
 
 #include "XenException.hpp"
 
-struct xengntdev_handle
-{
-	XenGnttabMock* mock;
-};
-
 using XenBackend::XenException;
 
 /*******************************************************************************
  * Xen interface
  ******************************************************************************/
+
+struct xengntdev_handle
+{
+	XenGnttabMock* mock;
+};
 
 xengnttab_handle* xengnttab_open(xentoollog_logger* logger,
 								 unsigned open_flags)

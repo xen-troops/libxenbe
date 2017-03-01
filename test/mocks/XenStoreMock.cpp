@@ -28,11 +28,6 @@ extern "C" {
 #include <xenstore.h>
 }
 
-struct xs_handle
-{
-	XenStoreMock* mock;
-};
-
 using std::find;
 using std::string;
 using std::vector;
@@ -40,6 +35,11 @@ using std::vector;
 /*******************************************************************************
  * Xen interface
  ******************************************************************************/
+
+struct xs_handle
+{
+	XenStoreMock* mock;
+};
 
 xs_handle* xs_open(unsigned long flags)
 {

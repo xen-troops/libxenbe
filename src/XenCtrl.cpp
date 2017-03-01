@@ -56,13 +56,13 @@ void XenInterface::getDomainsInfo(vector<xc_domaininfo_t>& infos)
 {
 	xc_domaininfo_t domainInfo[cDomInfoChunkSize];
 
-	auto newDomains = 0, numDomains = 0;
+	auto newDomains = 0, startDomain = 0;
 
 	infos.clear();
 
 	do
 	{
-		newDomains = xc_domain_getinfolist(mHandle, numDomains,
+		newDomains = xc_domain_getinfolist(mHandle, startDomain,
 										   cDomInfoChunkSize, domainInfo);
 
 		if (newDomains < 0)
@@ -70,9 +70,12 @@ void XenInterface::getDomainsInfo(vector<xc_domaininfo_t>& infos)
 			throw XenCtrlException("Can't get domain info");
 		}
 
-		numDomains += newDomains;
+		if (newDomains)
+		{
+			startDomain = domainInfo[newDomains - 1].domain + 1;
+		}
 
-		for(auto i = 0; i < numDomains; i++)
+		for(auto i = 0; i < newDomains; i++)
 		{
 			infos.push_back(domainInfo[i]);
 		}

@@ -17,13 +17,14 @@ set(SOURCES
 
 set(TEST_SOURCES
 	test/mocks/Pipe.cpp
-	test/mocks/xenctrl.c
+	test/mocks/XenCtrlMock.cpp
 	test/mocks/XenEvtchnMock.cpp
 	test/mocks/XenGnttabMock.cpp
 	test/mocks/XenStoreMock.cpp
 	test/test.cpp
 	test/testXenEvtchn.cpp
 	test/testXenGnttab.cpp
+	test/testXenStat.cpp
 	test/testXenStore.cpp
 )
 
