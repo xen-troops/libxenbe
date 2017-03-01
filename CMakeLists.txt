@@ -16,10 +16,13 @@ set(SOURCES
 )
 
 set(TEST_SOURCES
-	test/xenStubs/xenctrl.c
-	test/xenStubs/xenevtchn.c
-	test/xenStubs/xenstore.c
+	test/mocks/Pipe.cpp
+	test/mocks/xenctrl.c
+	test/mocks/xenevtchn.c
+	test/mocks/xengnttab.c
+	test/mocks/XenStoreMock.cpp
 	test/test.cpp
+	test/testXenStore.cpp
 )
 
 include_directories(

@@ -124,10 +124,26 @@ void XenStore::writeInt(const string& path, int value)
 {
 	auto strValue = to_string(value);
 
-	LOG(mLog, DEBUG) << "Write int " << path << " : " << strValue;
+	LOG(mLog, DEBUG) << "Write int " << path << " : " << value;
 
-	if (!xs_write(mXsHandle, XBT_NULL, path.c_str(), strValue.c_str(),
-				  strValue.length()))
+	writeString(path, strValue);
+}
+
+void XenStore::writeUint(const string& path, unsigned int value)
+{
+	auto strValue = to_string(value);
+
+	LOG(mLog, DEBUG) << "Write uint " << path << " : " << value;
+
+	writeString(path, strValue);
+}
+
+void XenStore::writeString(const string& path, const string& value)
+{
+	LOG(mLog, DEBUG) << "Write string " << path << " : " << value;
+
+	if (!xs_write(mXsHandle, XBT_NULL, path.c_str(), value.c_str(),
+				  value.length()))
 	{
 		throw XenStoreException("Can't write value to " + path);
 	}
@@ -135,6 +151,8 @@ void XenStore::writeInt(const string& path, int value)
 
 void XenStore::removePath(const string& path)
 {
+	LOG(mLog, DEBUG) << "Remove path " << path;
+
 	if (!xs_rm(mXsHandle, XBT_NULL, path.c_str()))
 	{
 		throw XenStoreException("Can't remove path " + path);

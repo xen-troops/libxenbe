@@ -140,7 +140,7 @@ void PollFd::init(int fd, short int events)
 	mFds[PollIndex::FILE].fd = fd;
 	mFds[PollIndex::FILE].events = events;
 
-	mFds[PollIndex::PIPE].fd = mPipeFds[0];
+	mFds[PollIndex::PIPE].fd = mPipeFds[PipeType::READ];
 	mFds[PollIndex::PIPE].events = POLLIN;
 }
 

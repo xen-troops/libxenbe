@@ -72,7 +72,8 @@ BackendBase::BackendBase(const string& name, const string& deviceName,
 	mTerminated(true),
 	mLog(name.empty() ? "Backend" : name)
 {
-	LOG(mLog, DEBUG) << "Create backend: " << deviceName << ", " << mDevId;
+	LOG(mLog, DEBUG) << "Create backend, device: " << deviceName << ", "
+					 << Utils::logDomId(domId, devId);
 }
 
 BackendBase::~BackendBase()
@@ -81,7 +82,7 @@ BackendBase::~BackendBase()
 
 	mFrontendHandlers.clear();
 
-	LOG(mLog, DEBUG) << "Delete backend: " << mDeviceName << ", " << mDevId;
+	LOG(mLog, DEBUG) << "Delete";
 }
 
 /*******************************************************************************
@@ -94,6 +95,8 @@ void BackendBase::start()
 	{
 		throw BackendException("Already started");
 	}
+
+	LOG(mLog, INFO) << "Start";
 
 	mTerminate = false;
 	mTerminated = false;

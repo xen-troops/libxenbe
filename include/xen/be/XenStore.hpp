@@ -106,6 +106,20 @@ public:
 	void writeInt(const std::string& path, int value);
 
 	/**
+	 * Writes unsigned value into XS entry.
+	 * @param path  path to the entry
+	 * @param value unsigned value
+	 */
+	void writeUint(const std::string& path, unsigned int value);
+
+	/**
+	 * Read XS entry as string.
+	 * @param path path to the entry
+	 * @param value string value
+	 */
+	void writeString(const std::string& path, const std::string& value);
+
+	/**
 	 * Removes XS entry.
 	 * @param path path to the entry
 	 */
