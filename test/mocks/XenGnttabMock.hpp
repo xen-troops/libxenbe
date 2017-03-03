@@ -33,6 +33,7 @@ public:
 
 	void* mapGrantRefs(uint32_t count, uint32_t domId, uint32_t *refs);
 	void unmapGrantRefs(void* address, uint32_t count);
+	void* getLastBuffer() const { return mLastMappedAddress; }
 	size_t getMapBufferSize(void* address);
 	void checkMapBuffers();
 
@@ -47,6 +48,7 @@ private:
 		size_t size;
 	};
 
+	void* mLastMappedAddress;
 	std::unordered_map<void*, MapBuffer> mMapBuffers;
 };
 

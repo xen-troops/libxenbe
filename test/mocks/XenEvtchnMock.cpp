@@ -104,7 +104,8 @@ XenEvtchnMock* XenEvtchnMock::sLastInstance = nullptr;
 evtchn_port_t XenEvtchnMock::sPort = 0;
 
 XenEvtchnMock::XenEvtchnMock() :
-	mLastNotifiedPort(-1)
+	mLastNotifiedPort(-1),
+	mLastBoundPort(-1)
 {
 	sLastInstance = this;
 }
@@ -129,6 +130,8 @@ evtchn_port_t XenEvtchnMock::bind(domid_t domId, evtchn_port_t remotePort)
 
 	mBoundPorts.push_back(boundPort);
 
+	mLastBoundPort = boundPort.localPort;
+
 	return boundPort.localPort;
 }
 
@@ -142,6 +145,11 @@ void XenEvtchnMock::notifyPort(evtchn_port_t port)
 	getBoundPort(port);
 
 	mLastNotifiedPort = port;
+
+	if (mNotifyCbk)
+	{
+		mNotifyCbk();
+	}
 }
 
 void XenEvtchnMock::signalPort(evtchn_port_t port)
@@ -151,6 +159,11 @@ void XenEvtchnMock::signalPort(evtchn_port_t port)
 	mSignaledPorts.push_back(port);
 
 	mPipe.write();
+}
+
+void XenEvtchnMock::signalLastBoundPort()
+{
+	signalPort(mLastBoundPort);
 }
 
 evtchn_port_t XenEvtchnMock::getPendingPort()
@@ -167,6 +180,11 @@ evtchn_port_t XenEvtchnMock::getPendingPort()
 	mPipe.read();
 
 	return port;
+}
+
+void XenEvtchnMock::setNotifyCbk(NotifyCbk cbk)
+{
+	mNotifyCbk = cbk;
 }
 
 /*******************************************************************************

@@ -105,9 +105,9 @@ LogLine::~LogLine()
 {
 	if (mCurrentLevel <= mSetLevel && mSetLevel > LogLevel::logDISABLE)
 	{
-		lock_guard<mutex> lock(mMutex);
-
 		mStream << endl;
+
+		lock_guard<mutex> lock(mMutex);
 
 		cout << mStream.str();
 		cout.flush();

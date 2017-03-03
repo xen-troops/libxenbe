@@ -159,10 +159,10 @@ public:
 	 * @param[in] pageSize ring buffer page size
 	 */
 	RingBufferInBase(domid_t domId, evtchn_port_t port,
-					 grant_ref_t ref, int pageSize = 4096) :
+					 grant_ref_t ref, int size = XC_PAGE_SIZE) :
 		RingBufferBase(domId, port, ref)
 	{
-		BACK_RING_INIT(&mRing, static_cast<Page*>(mBuffer.get()), pageSize);
+		BACK_RING_INIT(&mRing, static_cast<Page*>(mBuffer.get()), size);
 	}
 
 protected:
@@ -196,6 +196,7 @@ protected:
 	}
 
 private:
+
 	Ring mRing;
 
 	void onReceiveIndication()
@@ -215,7 +216,8 @@ private:
 				throw RingBufferException("Ring buffer producer overflow");
 			}
 
-			while (rc != rp) {
+			while (rc != rp)
+			{
 
 				if (RING_REQUEST_CONS_OVERFLOW(&mRing, rc))
 				{
@@ -232,8 +234,8 @@ private:
 			}
 
 			RING_FINAL_CHECK_FOR_REQUESTS(&mRing, numPendingRequests);
-
-		} while (numPendingRequests);
+		}
+		while (numPendingRequests);
 	}
 };
 
@@ -286,8 +288,6 @@ public:
 				static_cast<uint8_t*>(mBuffer.get()) + offset)),
 		mNumEvents(size/sizeof(Event))
 	{
-		xen_mb();
-
 		mPage->in_prod = 0;
 
 		xen_wmb();
@@ -301,18 +301,22 @@ public:
 	{
 		std::lock_guard<std::mutex> lock(mMutex);
 
-		xen_mb();
-
 		mEventBuffer[mPage->in_prod % mNumEvents] = event;
 
 		mPage->in_prod++;
 
 		xen_wmb();
 
+		if (mPage->in_prod == mPage->in_cons)
+		{
+			throw RingBufferException("Ring buffer overflow");
+		}
+
 		mEventChannel.notify();
 	}
 
 private:
+
 	Page* mPage;
 	Event* mEventBuffer;
 	int mNumEvents;

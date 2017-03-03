@@ -84,7 +84,8 @@ int xengnttab_unmap(xengnttab_handle* xgt, void* start_address, uint32_t count)
 
 XenGnttabMock* XenGnttabMock::sLastInstance = nullptr;
 
-XenGnttabMock::XenGnttabMock()
+XenGnttabMock::XenGnttabMock() :
+	mLastMappedAddress(nullptr)
 {
 	sLastInstance = this;
 }
@@ -101,6 +102,8 @@ void* XenGnttabMock::mapGrantRefs(uint32_t count, uint32_t domId,
 	void* address = malloc(buffer.size);
 
 	mMapBuffers[address] = buffer;
+
+	mLastMappedAddress = address;
 
 	return address;
 }
