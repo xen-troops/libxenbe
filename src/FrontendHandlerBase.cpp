@@ -53,24 +53,27 @@ namespace XenBackend {
  ******************************************************************************/
 
 FrontendHandlerBase::FrontendHandlerBase(const string& name,
-										 BackendBase& backend,
-										 domid_t domId,
-										 uint16_t devId) :
-	mDomId(domId),
-	mDevId(devId),
-	mBackend(backend),
+										 const string& devName,
+										 domid_t beDomId, domid_t feDomId,
+										 uint16_t beDevId, uint16_t feDevId) :
+	mBeDomId(beDomId),
+	mFeDomId(feDomId),
+	mBeDevId(beDevId),
+	mFeDevId(feDevId),
+	mDevName(devName),
 	mBackendState(XenbusStateUnknown),
 	mFrontendState(XenbusStateUnknown),
 	mXenStore(bind(&FrontendHandlerBase::onError, this, _1)),
 	mLog(name.empty() ? "Backend" : name)
 {
-	mLogId = Utils::logDomId(mDomId, mDevId) + " - ";
+	mLogId = Utils::logDomId(mFeDomId, mFeDevId) + " - ";
 
 	LOG(mLog, DEBUG) << mLogId << "Create frontend handler";
 
 	initXenStorePathes();
 
-	mDomName = mXenStore.readString(mXenStore.getDomainPath(mDomId) + "/name");
+	mDomName = mXenStore.readString(mXenStore.getDomainPath(mFeDomId) +
+									"/name");
 
 	setBackendState(XenbusStateInitialising);
 
@@ -83,6 +86,8 @@ FrontendHandlerBase::FrontendHandlerBase(const string& name,
 
 FrontendHandlerBase::~FrontendHandlerBase()
 {
+	mXenStore.clearWatch(mXsFrontendPath + "/state");
+
 	setBackendState(XenbusStateClosing);
 
 	// stop is required to prevent calling processRequest during deletion
@@ -242,17 +247,17 @@ void FrontendHandlerBase::initXenStorePathes()
 {
 	stringstream ss;
 
-	ss << mXenStore.getDomainPath(mDomId) << "/device/"
-	   << mBackend.getDeviceName() << "/" << mDevId;
+	ss << mXenStore.getDomainPath(mFeDomId) << "/device/"
+	   << mDevName << "/" << mFeDevId;
 
 	mXsFrontendPath = ss.str();
 
 	ss.str("");
 	ss.clear();
 
-	ss << mXenStore.getDomainPath(mBackend.getDomId()) << "/backend/"
-	   << mBackend.getDeviceName() << "/"
-	   << mDomId << "/" << mBackend.getDevId();
+	ss << mXenStore.getDomainPath(mBeDomId) << "/backend/"
+	   << mDevName << "/"
+	   << mFeDomId << "/" << mBeDevId;
 
 	mXsBackendPath = ss.str();
 

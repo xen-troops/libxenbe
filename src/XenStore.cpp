@@ -223,6 +223,10 @@ void XenStore::setWatch(const string& path, WatchCallback callback,
 
 		mThread = thread(&XenStore::watchesThread, this);
 	}
+	else
+	{
+		mWatches[path] = callback;
+	}
 }
 
 void XenStore::clearWatch(const string& path)
@@ -365,6 +369,7 @@ XenStore::WatchCallback XenStore::getWatchCallback(string& path)
 	WatchCallback callback = nullptr;
 
 	auto result = mWatches.find(path);
+
 	if (result != mWatches.end())
 	{
 		LOG(mLog, DEBUG) << "Watch triggered: " << path;

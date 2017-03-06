@@ -22,6 +22,7 @@ set(TEST_SOURCES
 	test/mocks/XenGnttabMock.cpp
 	test/mocks/XenStoreMock.cpp
 	test/test.cpp
+	test/testFrontendHandler.cpp
 	test/testRingBuffer.cpp
 	test/testXenEvtchn.cpp
 	test/testXenGnttab.cpp

@@ -33,7 +33,6 @@ extern "C" {
 }
 
 using std::chrono::milliseconds;
-using std::cv_status;
 using std::condition_variable;
 using std::mutex;
 using std::unique_lock;

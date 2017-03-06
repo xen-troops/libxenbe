@@ -86,26 +86,27 @@ class FrontendHandlerBase
 public:
 	/**
 	 * @param[in] name                optional frontend name
-	 * @param[in] backend             reference to the backend instance
-	 * @param[in] waitForInitialising after start waits for frontend is
-	 *                                initialising
-	 * @param[in] domId               frontend domain id
-	 * @param[in] id                  frontend instance id
+	 * @param[in] devName             device name
+	 * @param[in] beDomId             backend domain id
+	 * @param[in] feDomId             frontend domain id
+	 * @param[in] beDevId             backend device id
+	 * @param[in] feDevId             frontend device id
 	 */
-	FrontendHandlerBase(const std::string& name, BackendBase& backend,
-						domid_t domId, uint16_t devId = 0);
+	FrontendHandlerBase(const std::string& name, const std::string& devName,
+						domid_t beDomId, domid_t feDomId,
+						uint16_t beDevId = 0, uint16_t feDevId = 0);
 
 	virtual ~FrontendHandlerBase();
 
 	/**
 	 * Returns frontend domain id
 	 */
-	domid_t getDomId() const { return mDomId; }
+	domid_t getDomId() const { return mFeDomId; }
 
 	/**
 	 * Returns frontend device id
 	 */
-	uint16_t getDevId() const {  return mDevId; }
+	uint16_t getDevId() const {  return mFeDevId; }
 
 	/**
 	 * Returns domain name
@@ -116,6 +117,11 @@ public:
 	 * Returns frontend xen store base path
 	 */
 	std::string getXsFrontendPath() const { return mXsFrontendPath; }
+
+	/**
+	 * Returns backend xen store base path
+	 */
+	std::string getXsBackendPath() const { return mXsBackendPath; }
 
 	/**
 	 * Returns reference to the xen store instance accociated with the frontend
@@ -196,10 +202,12 @@ private:
 
 	typedef void(FrontendHandlerBase::*StateFn)();
 
-	domid_t mDomId;
-	uint16_t mDevId;
+	domid_t mBeDomId;
+	domid_t mFeDomId;
+	uint16_t mBeDevId;
+	uint16_t mFeDevId;
+	std::string mDevName;
 	std::string mDomName;
-	BackendBase& mBackend;
 
 	xenbus_state mBackendState;
 	xenbus_state mFrontendState;
