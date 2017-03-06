@@ -1,34 +1,6 @@
 cmake_minimum_required(VERSION 3.0)
 
-project(libxenbe)
-
-set(SOURCES
-	src/BackendBase.cpp
-	src/FrontendHandlerBase.cpp
-	src/RingBufferBase.cpp
-	src/Log.cpp
-	src/Utils.cpp
-	src/XenCtrl.cpp
-	src/XenEvtchn.cpp
-	src/XenGnttab.cpp
-	src/XenStat.cpp
-	src/XenStore.cpp
-)
-
-set(TEST_SOURCES
-	test/mocks/Pipe.cpp
-	test/mocks/XenCtrlMock.cpp
-	test/mocks/XenEvtchnMock.cpp
-	test/mocks/XenGnttabMock.cpp
-	test/mocks/XenStoreMock.cpp
-	test/testBackend.cpp
-	test/testFrontendHandler.cpp
-	test/testRingBuffer.cpp
-	test/testXenEvtchn.cpp
-	test/testXenGnttab.cpp
-	test/testXenStat.cpp
-	test/testXenStore.cpp
-)
+enable_testing()
 
 include_directories(
 	include/xen/be
@@ -38,13 +10,8 @@ include_directories(
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11 -Wall")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall")
 
-add_library(xenbe SHARED ${SOURCES})
-
-add_executable(tests ${TEST_SOURCES})
-
-target_link_libraries(tests xenbe pthread)
-
-install(TARGETS xenbe LIBRARY DESTINATION lib)
+add_subdirectory(src)
+add_subdirectory(test)
 
 install(
 	DIRECTORY include/
