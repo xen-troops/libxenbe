@@ -109,14 +109,14 @@ public:
 	const std::string& getDeviceName() const { return mDeviceName; }
 
 	/**
-	 * Returns device id
-	 */
-	uint16_t getDevId() const { return mDevId; }
-
-	/**
 	 * Returns domain id
 	 */
 	domid_t getDomId() const { return mDomId; }
+
+	/**
+	 * Returns device id
+	 */
+	uint16_t getDevId() const { return mDevId; }
 
 protected:
 	/**
