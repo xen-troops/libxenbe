@@ -1,4 +1,4 @@
-project(test)
+project(unitTests)
 
 set(SOURCES
 	mocks/Pipe.cpp
@@ -15,8 +15,8 @@ set(SOURCES
 	testXenStore.cpp
 )
 
-add_executable(tests ${SOURCES})
+add_executable(unitTests ${SOURCES})
 
-target_link_libraries(tests xenbe pthread)
+target_link_libraries(unitTests xenbe pthread)
 
-add_test(NAME Test COMMAND tests)
+add_test(NAME Test COMMAND unitTests)

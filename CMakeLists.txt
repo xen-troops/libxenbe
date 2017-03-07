@@ -10,6 +10,12 @@ include_directories(
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11 -Wall")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall")
 
+if (CMAKE_BUILD_TYPE STREQUAL "Coverage")
+	set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/CMakeModules)
+	include(CodeCoverage)
+	setup_target_for_coverage(coverage unitTests coverage)
+endif()
+
 add_subdirectory(src)
 add_subdirectory(test)
 
