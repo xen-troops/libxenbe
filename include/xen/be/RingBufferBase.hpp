@@ -121,8 +121,18 @@ private:
 /***************************************************************************//**
  * Base class to create the custom input ring buffer (for handling requests
  * from the frontend).
- * In order to create the ring buffer the client should implement a class
+ * RingBufferInBase is a template with arguments taken from PV driver protocol.
+ * The arguments of the template are structures defined with Xen
+ * DEFINE_RING_TYPES() macro from ring.h. Also the in ring buffer takes a remote
+ * event channel number and a grant reference on which the ring buffer is
+ * mapped.* Xen event channel is used to notify backend that a new request is
+ * available in the ring buffer. When a new request is received,
+ * processRequest() method is called. To send the response, the client should
+ * call sendResponse() method.
+ *
+ * In order to create the in ring buffer the client should implement a class
  * inherited from RingBufferInBase and override processRequest() method.
+ *
  * @code
  * class MyRingBuffer : public XenBackend::RingBufferInBase<
  *                                         my_back_ring,
@@ -131,20 +141,33 @@ private:
  *                                         my_resp>
  * {
  * public:
- *     MyRingBuffer(domid_t domId, int port, int ref) :
+ *
+ *     MyRingBuffer(domid_t domId, evtchn_port_t port, grant_ref_t ref) :
  *         RingBufferInBase<my_back_ring, my_sring, my_req, my_resp>
  *             (domId, port, ref) {}
  * private:
+ *
  *     void processRequest(const my_req& req)
  *     {
- *         switch(eq.u.data.operation)
+ *         my_resp rsp;
+ *
+ *         switch(req.u.data.operation)
  *         {
- *             ...
+ *             case CMD1:
+ *                 // do command 1
+ *             break;
+ *
+ *             case CMD2:
+ *                 // do command 2
+ *             break;
  *         }
+ *
+ *         // prepare response
+ *         sendResponse(rsp);
  *     }
  * };
- *
  * @endcode
+ *
  * @ingroup backend
  ******************************************************************************/
 template<typename Ring, typename Page, typename Req, typename Rsp>
@@ -156,7 +179,7 @@ public:
 	 * @param[in] domId    frontend domain id
 	 * @param[in] port     event channel port number
 	 * @param[in] ref      ring buffer ref number
-	 * @param[in] pageSize ring buffer page size
+	 * @param[in] size ring buffer size
 	 */
 	RingBufferInBase(domid_t domId, evtchn_port_t port,
 					 grant_ref_t ref, int size = XC_PAGE_SIZE) :

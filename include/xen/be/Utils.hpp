@@ -42,7 +42,7 @@ class Utils
 public:
 
 	/**
-	 * Returns string which represents domain id and instance id for logging
+	 * Returns string which represents domain id and device id for logging
 	 * @param[in] domId domain id
 	 * @param[in] devId device id
 	 * @return string representation of domain id and device id
@@ -59,7 +59,11 @@ public:
 
 /***************************************************************************//**
  * Class to poll file descriptor.
- * It can be interripted by calling stop() method.
+ *
+ * The PollFd class also opens an additional pipe. On poll() method it waits
+ * for both: the defined file descriptor and the internal pipe file descriptor.
+ * The internal pipe file descriptor breaks poll() when stop() method is
+ * invoked. It is used to unblock poll() when an object using PollFd is deleted.
  * @ingroup backend
  ******************************************************************************/
 class PollFd

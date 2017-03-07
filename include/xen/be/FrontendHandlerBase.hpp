@@ -54,12 +54,60 @@ class BackendBase;
 class XenStore;
 
 /***************************************************************************//**
- * Handles connected frontend.
- * The client should create a class inherited from FrontendHandlerBase and
- * implement onBind() method. This method is invoked when the frontend goes to
- * initialized state. The client should read the channel configuration
- * (ref for the ring buffer and port for the event channel), create DataChannel
- * instance and add with addChennel() method.
+ * Handles the connected frontend.
+ *
+ * The frontend handler implements the frontend-backend state machine, keeps
+ * and monitors associated ring buffers.
+ *
+ * Backend state machine:
+ * @dot
+ * digraph stateMachine {
+ *     rankdir=LR;
+ *     size="8,5"
+ *     node [shape = rectangle];
+ *     Initializing -> InitWait [ label = "Initializing" ]
+ *     InitWait ->  Connected [ label = "Initialized" ]
+ *     Connected -> Closing [ label = "Closing" ]
+ *     Connected -> Closing [ label = "Closed" ]
+ *     Connected -> Closing [ label = "Initializing" ]
+ *     Closing -> Closed
+ * }
+ * @enddot
+ *
+ * Initially backend is in XenbusStateInitialising. When the frontend goes to
+ * XenbusStateInitialising, the backend switches to XenbusStateInitWait.
+ * Once the frontend creates event channels and ring buffers for communication,
+ * it goes to XenbusStateInitialised state. It means that the backend can open
+ * and map event channels and ring buffers on its side. Before going to
+ * XenbusStateConnected state the frontend handler call onBind() method.
+ * Usually the client should create ring buffers or perform other initialization
+ * inside onBind() method. Created ring buffers should be added by
+ * addRingBuffer() method in order to allow the frontend handler to monitor
+ * their states.
+ *
+ * If the client desires to change the default state machine behavior, it may
+ * override some of onState...() methods. These methods are called when the
+ * frontend goes to appropriate state:
+ *
+ * <table>
+ * <tr><th>State                    <th>Method
+ * <tr><td>XenbusStateInitialising  <td>onStateInitializing()
+ * <tr><td>XenbusStateInitWait      <td>onStateInitWait()
+ * <tr><td>XenbusStateInitialised   <td>onStateInitialized()
+ * <tr><td>XenbusStateConnected     <td>onStateConnected()
+ * <tr><td>XenbusStateClosing       <td>onStateInitialized()
+ * <tr><td>XenbusStateClosed        <td>onStateConnected()
+ * <tr><td>XenbusStateReconfiguring <td>onStateReconfiguring()
+ * <tr><td>XenbusStateReconfigured  <td>onStateReconfigured()
+ * </table>
+ *
+ * The client should implement a class inherited from FrontendHandlerBase and
+ * override onBind() method. The instance of this class should be created in
+ * BackendBase::onNewFrontend(). The client should read the event channel and
+ * ring buffer configurations from Xen store or using any other mechanism
+ * according to the protocol. Then the client should create appropriate
+ * ring buffers with negotiated parameters and add them with addRingBuffer().
+ *
  * Example of the client frontend handler class:
  * @code{.cpp}
  * class MyFrontend : public XenBackend::FrontendHandlerBase
@@ -75,7 +123,7 @@ class XenStore;
  *
  *         RingBufferPtr ringBuffer(new MyRingBuffer(getDomId(), port, ref));
  *
- *         addChannel(port, ringBuffer);
+ *         addRingBuffer(ringBuffer);
  *     }
  * };
  * @endcode
@@ -129,7 +177,7 @@ public:
 	XenStore& getXenStore() {  return mXenStore; }
 
 	/**
-	 * Check if frontend is terminated
+	 * Checks if frontend is terminated
 	 */
 	bool isTerminated();
 

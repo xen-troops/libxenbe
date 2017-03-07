@@ -52,11 +52,29 @@ class BackendException : public XenException
 };
 
 /***************************************************************************//**
- * The entry class to implement the backend.
+ * Base class for a backend implementation.
+ *
+ * The main functionality is detecting a new frontend and deleting
+ * terminated frontends.
+ *
+ * This class periodically checks if a new domain appears with Xen control API.
+ * Then it looks up for a specific path in Xen store where the frontend
+ * stores its state. If the path exists we assume that an expected frontend is
+ * running or will be run on this domain. At same loop the backend class checks
+ * FrontendHandlerBase::isTerminated() method and deleted the terminated
+ * frontend. The frontend is terminated when during operation a critical
+ * error occurs.
+ *
+ * Once the new frontend is detected it calls onNewFrontend() method.
+ * This method should be overridden by the custom instance of BackendBase class.
+ * It is expected that in this method a new instance of FrontendHandlerBase
+ * class will be created and added with addFrontendHandler() method.
+ * Adding the frontend handler is required to allow the backend class monitoring
+ * terminated frontends.
+ *
  * The client should create a class inherited from BackendBase and implement
  * onNewFrontend() method.
- * Also the way in which the new domain is detected can be changed by overriding
- * getNewFrontend().
+ *
  * Example of the client backend class:
  *
  * @code{.cpp}
@@ -69,9 +87,32 @@ class BackendException : public XenException
  *     void onNewFrontend(domid_t domId, uint16_t devId)
  *     {
  *         addFrontendHandler(FrontendHandlerPtr(
- *             new MyFrontendHandler("MyFrontend", *this, domId, devId)));
+ *             new MyFrontendHandler("MyFrontend", getDeviceName(),
+ *                                   getDomId(), domId, getDevId(), devId)));
  *     }
  * };
+ * @endcode
+ *
+ * The client may change the new frontend detection algorithm. For this
+ * reason it may override getNewFrontend() method.
+ *
+ * When the backend instance is created, it should be started by calling start()
+ * method. The backend will process frontends till it is deleted or stop()
+ * method is called. If the backend instance is used in the main loop,
+ * waitForFinish() method may be used to block the main loop till it is
+ * finished.
+ *
+ * @code{.cpp}
+ * int main(int argc, char* argv[])
+ * {
+ *     MyBackend backend("MyBackend", "MyDevice", 0, 0);
+ *
+ *     backend.start();
+ *
+ *     backend.waitForFinish();
+ *
+ *     return 0;
+ * }
  * @endcode
  * @ingroup backend
  ******************************************************************************/
@@ -119,6 +160,7 @@ public:
 	uint16_t getDevId() const { return mDevId; }
 
 protected:
+
 	/**
 	 * Is called periodically to check if a new frontend's appeared.
 	 * In order to change the way a new domain is detected the client may
@@ -136,7 +178,7 @@ protected:
 	 * the instance of FrontendHandlerBase class and pass it to
 	 * addFrontendHandler().
 	 * @param[in] domId domain id
-	 * @param[in] id    instance id
+	 * @param[in] devId device id
 	 */
 	virtual void onNewFrontend(domid_t domId, uint16_t devId) = 0;
 

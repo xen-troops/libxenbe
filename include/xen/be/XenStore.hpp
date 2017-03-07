@@ -51,7 +51,7 @@ class XenStoreException : public XenException
 };
 
 /***************************************************************************//**
- * Provides Xen Store (XS) functionality.
+ * Provides Xen Store functionality.
  * @ingroup xen
  ******************************************************************************/
 class XenStore
