@@ -1,7 +1,5 @@
 cmake_minimum_required(VERSION 3.0)
 
-enable_testing()
-
 include_directories(
 	include
 	include/xen/be
@@ -14,15 +12,18 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall")
 
 link_directories(${XEN_LIB_PATH})
 
-if (CMAKE_BUILD_TYPE STREQUAL "Coverage")
-	set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/CMakeModules)
-	include(CodeCoverage)
-	setup_target_for_coverage(coverage unitTests coverage)
-endif()
-
 add_subdirectory(src)
 add_subdirectory(example)
-add_subdirectory(test)
+
+if (NOT SKIP_TESTS)
+	enable_testing()
+	add_subdirectory(test)
+	if (CMAKE_BUILD_TYPE STREQUAL "Coverage")
+		set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/CMakeModules)
+		include(CodeCoverage)
+		setup_target_for_coverage(coverage unitTests coverage)
+	endif()
+endif()
 
 install(
 	DIRECTORY include/
