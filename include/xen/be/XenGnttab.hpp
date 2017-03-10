@@ -68,6 +68,17 @@ private:
 
 /***************************************************************************//**
  * Gran table buffer.
+ * XenGnttabBuffer instance maps grant table reference(s) into local linear
+ * buffer when constructed. Then address and size of the linear buffer can
+ * be accessible by get() and size() methods.
+ * @code
+ * XenGnttabBuffer buffer(domId, ref);
+ *
+ * memcpy(buffer.get(), data, size);
+ *
+ * ...
+ *
+ * @endcode
  * @ingroup xen
  ******************************************************************************/
 class XenGnttabBuffer

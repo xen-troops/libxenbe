@@ -77,21 +77,11 @@ class BackendException : public XenException
  *
  * Example of the client backend class:
  *
- * @code{.cpp}
- * class MyBackend : public XenBackend::BackendBase
- * {
- *     using XenBackend::BackendBase::BackendBase;
+ * @snippet ExampleBackend.hpp ExampleBackend
  *
- * private:
+ * onNewFrontend() example:
  *
- *     void onNewFrontend(domid_t domId, uint16_t devId)
- *     {
- *         addFrontendHandler(FrontendHandlerPtr(
- *             new MyFrontendHandler("MyFrontend", getDeviceName(),
- *                                   getDomId(), domId, getDevId(), devId)));
- *     }
- * };
- * @endcode
+ * @snippet ExampleBackend.cpp onNewFrontend
  *
  * The client may change the new frontend detection algorithm. For this
  * reason it may override getNewFrontend() method.
@@ -102,18 +92,8 @@ class BackendException : public XenException
  * waitForFinish() method may be used to block the main loop till it is
  * finished.
  *
- * @code{.cpp}
- * int main(int argc, char* argv[])
- * {
- *     MyBackend backend("MyBackend", "MyDevice", 0, 0);
+ * @snippet ExampleBackend.cpp main
  *
- *     backend.start();
- *
- *     backend.waitForFinish();
- *
- *     return 0;
- * }
- * @endcode
  * @ingroup backend
  ******************************************************************************/
 class BackendBase

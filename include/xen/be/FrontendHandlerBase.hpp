@@ -102,31 +102,19 @@ class XenStore;
  * </table>
  *
  * The client should implement a class inherited from FrontendHandlerBase and
- * override onBind() method. The instance of this class should be created in
- * BackendBase::onNewFrontend(). The client should read the event channel and
- * ring buffer configurations from Xen store or using any other mechanism
- * according to the protocol. Then the client should create appropriate
- * ring buffers with negotiated parameters and add them with addRingBuffer().
+ * override onBind() method.
  *
  * Example of the client frontend handler class:
- * @code{.cpp}
- * class MyFrontend : public XenBackend::FrontendHandlerBase
- * {
- *     using XenBackend::FrontendHandlerBase::FrontendHandlerBase;
  *
- * private:
+ * @snippet ExampleBackend.hpp ExampleFrontend
  *
- *     void onBind(domid_t domId, uint16_t devId)
- *     {
- *         auto port = getXenStore().readInt("/path/to/eventChannel/port");
- *         uint32_t ref = getXenStore().readInt("/path/to/ringBuffer/ref);
+ * The client should read the event channel and
+ * ring buffer configurations from Xen store or using any other mechanism
+ * according to the protocol. Then the client should create appropriate
+ * ring buffers with negotiated parameters and add them with addRingBuffer():
  *
- *         RingBufferPtr ringBuffer(new MyRingBuffer(getDomId(), port, ref));
+ * @snippet ExampleBackend.cpp onBind
  *
- *         addRingBuffer(ringBuffer);
- *     }
- * };
- * @endcode
  * @ingroup backend
  ******************************************************************************/
 class FrontendHandlerBase

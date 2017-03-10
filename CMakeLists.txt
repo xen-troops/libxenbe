@@ -3,12 +3,16 @@ cmake_minimum_required(VERSION 3.0)
 enable_testing()
 
 include_directories(
+	include
 	include/xen/be
+	test
 	${XEN_INCLUDE_PATH}
 )
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11 -Wall")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall")
+
+link_directories(${XEN_LIB_PATH})
 
 if (CMAKE_BUILD_TYPE STREQUAL "Coverage")
 	set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/CMakeModules)
@@ -17,6 +21,7 @@ if (CMAKE_BUILD_TYPE STREQUAL "Coverage")
 endif()
 
 add_subdirectory(src)
+add_subdirectory(example)
 add_subdirectory(test)
 
 install(

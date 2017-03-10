@@ -43,18 +43,31 @@ namespace XenBackend {
  *
  * @section Purpose
  *
- * This library is designed to help creating Xen backends. It contains classes
- * which implement backand/frontend states handling, data channels (a ring
- * buffer with associated event channel) and wrappers which provide basic Xen
- * tools functionality but in more easy and convenient way.
+ * This library is designed to help creating Xen PV backends. It detects when
+ * a new frontend is up, handles backend state machine, simplifies the Xen store
+ * operations and simplifies ring buffers frontend/backend communications.
+ * It consists of two main classes and some helpers classes. Main classes are
+ * BackendBase and FrontendHandlerBase. BackendBase class detects new frontends
+ * and monitors their states. FrontendHandlerBase handles the backend state
+ * machine and monitors ring buffers states.
  *
- * @section Using
+ * Helpers classes are C++ wrappers of main Xen primitives such as Xen store,
+ * Xen control, Xen grant table, Xen event channel and ring buffers.
  *
- * To create a Xen backend the client should implement few classes inherited
- * from ones provided by libxenbe and override some virtual functions. The
- * classes to be inherited are: XenBackend::BackendBase,
- * XenBackend::FrontendHandlerBase and XenBackend::RingBufferBase.
+ * @section Usage
  *
+ * To create a Xen backend the client should have the header file with protocol
+ * description (see  testProtocol.h). Then following classes shall be
+ * implemented:
+ *     - a backend class inherited from BackendBase;
+ *     - a frontend handler class inherited from FrontendHandlerBase;
+ *     - a input ring buffer class inherited from RingBufferInBase;
+ *     - an optional output ring buffer class inherited from RingBufferOutBase.
+ *
+ * See examples for reference.
+ *
+ * @example ExampleBackend.cpp
+ * @example ExampleBackend.hpp
  ******************************************************************************/
 
 /*******************************************************************************

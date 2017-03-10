@@ -125,7 +125,7 @@ private:
  * The arguments of the template are structures defined with Xen
  * DEFINE_RING_TYPES() macro from ring.h. Also the in ring buffer takes a remote
  * event channel number and a grant reference on which the ring buffer is
- * mapped.* Xen event channel is used to notify backend that a new request is
+ * mapped. Xen event channel is used to notify the backend that a new request is
  * available in the ring buffer. When a new request is received,
  * processRequest() method is called. To send the response, the client should
  * call sendResponse() method.
@@ -133,40 +133,11 @@ private:
  * In order to create the in ring buffer the client should implement a class
  * inherited from RingBufferInBase and override processRequest() method.
  *
- * @code
- * class MyRingBuffer : public XenBackend::RingBufferInBase<
- *                                         my_back_ring,
- *                                         my_sring,
- *                                         my_req,
- *                                         my_resp>
- * {
- * public:
+ * @snippet ExampleBackend.hpp ExampleInRingBuffer
  *
- *     MyRingBuffer(domid_t domId, evtchn_port_t port, grant_ref_t ref) :
- *         RingBufferInBase<my_back_ring, my_sring, my_req, my_resp>
- *             (domId, port, ref) {}
- * private:
+ * processRequest():
  *
- *     void processRequest(const my_req& req)
- *     {
- *         my_resp rsp;
- *
- *         switch(req.u.data.operation)
- *         {
- *             case CMD1:
- *                 // do command 1
- *             break;
- *
- *             case CMD2:
- *                 // do command 2
- *             break;
- *         }
- *
- *         // prepare response
- *         sendResponse(rsp);
- *     }
- * };
- * @endcode
+ * @snippet ExampleBackend.cpp processRequest
  *
  * @ingroup backend
  ******************************************************************************/
@@ -263,32 +234,25 @@ private:
 };
 
 /***************************************************************************//**
- * Base class to create the custom output ring buffer (for sending events
- * to the frontend).
- * In order to create the ring buffer the client should implement a class
- * inherited from RingBufferOutBase.
- * @code
- * class MyRingBuffer : public XenBackend::RingBufferBase<
- *                                         my_back_ring,
- *                                         my_sring,
- *                                         my_req,
- *                                         my_resp>
- * {
- * public:
- *     MyRingBuffer(int domId, int port, int ref) :
- *         RingBufferInBase<my_back_ring, my_sring, my_req, my_resp>
- *             (domId, port, ref) {}
- * private:
- *     void processRequest(const my_req& req)
- *     {
- *         switch(eq.u.data.operation)
- *         {
- *             ...
- *         }
- *     }
- * };
+ * Base class to create the custom output ring buffer (for sending events to
+ * the frontend).
+ * RingBufferOutBase is a template with arguments taken from PV driver protocol.
+ * The arguments of the template are structures described the ring buffer and
+ * events to be sent to the frontend. Also the out ring buffer takes a remote
+ * event channel number, a grant reference on which the ring buffer is
+ * mapped and offset where the events are stored in the ring buffer. Xen event
+ * channel is used to notify the frontend that a new event is available in
+ * the ring buffer.
  *
- * @endcode
+ * The out ring buffer can be instantiated directly, no need to implement a
+ * class inherited from RingBufferOutBase.
+ *
+ * @snippet ExampleBackend.hpp ExampleOutRingBuffer
+ *
+ *The client should call sendEvent() method to send an event to the frontend:
+ *
+ * @snippet ExampleBackend.cpp onSomeEvent
+ *
  * @ingroup backend
  ******************************************************************************/
 template<typename Page,typename Event>
@@ -324,19 +288,23 @@ public:
 	{
 		std::lock_guard<std::mutex> lock(mMutex);
 
+		if (static_cast<int>(mPage->in_prod - mPage->in_cons) >= mNumEvents)
+		{
+			throw RingBufferException("Ring buffer overflow");
+		}
+
 		mEventBuffer[mPage->in_prod % mNumEvents] = event;
 
 		mPage->in_prod++;
 
 		xen_wmb();
 
-		if (mPage->in_prod == mPage->in_cons)
-		{
-			throw RingBufferException("Ring buffer overflow");
-		}
-
 		mEventChannel.notify();
 	}
+
+protected:
+
+	void onReceiveIndication() {}
 
 private:
 
@@ -345,8 +313,6 @@ private:
 	int mNumEvents;
 
 	std::mutex mMutex;
-
-	void onReceiveIndication() {}
 };
 
 typedef std::shared_ptr<RingBufferBase> RingBufferPtr;

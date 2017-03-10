@@ -50,6 +50,23 @@ class XenEvtchnException : public XenException
 
 /***************************************************************************//**
  * Implements xen event channel.
+ * XenEvtchn instance binds port and waits for the bound channel is notified.
+ * When the channel is notified it calls the callback function passed as
+ * argument to the XenEvtchn constructor.
+ *
+ * @code
+ * void eventChannelCbk()
+ * {
+ *     // handle the event channel notification
+ *
+ *     ...
+ * }
+ *
+ * XenEvtchn eventChannel(domId, port, eventChannelCbk);
+ *
+ * ...
+ *
+ * @endcode
  * @ingroup xen
  ******************************************************************************/
 class XenEvtchn
