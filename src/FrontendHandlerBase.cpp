@@ -64,7 +64,7 @@ FrontendHandlerBase::FrontendHandlerBase(const string& name,
 	mBackendState(XenbusStateUnknown),
 	mFrontendState(XenbusStateUnknown),
 	mXenStore(bind(&FrontendHandlerBase::onError, this, _1)),
-	mLog(name.empty() ? "Backend" : name)
+	mLog(name.empty() ? "FrontendHandler" : name)
 {
 	mLogId = Utils::logDomId(mFeDomId, mFeDevId) + " - ";
 

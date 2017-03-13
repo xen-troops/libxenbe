@@ -122,9 +122,7 @@ TEST_CASE("BackendHandler", "[backendhandler]")
 
 int main( int argc, char* argv[] )
 {
-	Log::setLogLevel(LogLevel::logDISABLE);
-//	Log::setLogLevel(LogLevel::logINFO);
-//	Log::setLogLevel(LogLevel::logDEBUG);
+	Log::setLogMask("*:Disable");
 
 	int result = Catch::Session().run( argc, argv );
 

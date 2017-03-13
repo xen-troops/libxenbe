@@ -25,8 +25,6 @@
 #include <iomanip>
 #include <iostream>
 
-using std::atomic;
-using std::atomic_bool;
 using std::chrono::duration_cast;
 using std::chrono::milliseconds;
 using std::chrono::system_clock;
@@ -35,14 +33,17 @@ using std::cout;
 using std::endl;
 using std::localtime;
 using std::lock_guard;
+using std::make_pair;
 using std::mutex;
 using std::ostringstream;
+using std::pair;
 using std::put_time;
 using std::setfill;
 using std::setw;
 using std::string;
 using std::to_string;
 using std::transform;
+using std::vector;
 
 namespace XenBackend {
 
@@ -50,8 +51,10 @@ namespace XenBackend {
  * Static
  ******************************************************************************/
 
-atomic<LogLevel> Log::sCurrentLevel(LogLevel::logINFO);
-atomic_bool Log::sShowFileAndLine(false);
+LogLevel Log::sCurrentLevel(LogLevel::logINFO);
+bool Log::sShowFileAndLine(false);
+string Log::sLogMask;
+vector<pair<string, LogLevel>> Log::sLogMaskItems;
 
 /// @cond HIDDEN_SYMBOLS
 
@@ -62,6 +65,79 @@ size_t LogLine::sAlignmentLength = 0;
  ******************************************************************************/
 
 bool Log::setLogLevel(const string& strLevel)
+{
+	return getLogLevelByString(strLevel, sCurrentLevel);
+}
+
+/*******************************************************************************
+ * Public
+ ******************************************************************************/
+
+bool Log::setLogMask(const string& mask)
+{
+	sLogMask = mask;
+
+	vector<string> items;
+
+	splitMask(items, ';');
+
+	sLogMaskItems.clear();
+
+	for(auto item : items)
+	{
+		size_t sepPos = 0;
+		LogLevel logLevel = LogLevel::logDEBUG;
+
+		sepPos = item.find(':');
+
+		if (sepPos == string::npos)
+		{
+			sepPos = item.length();
+		}
+		else
+		{
+			if (!getLogLevelByString(item.substr(sepPos + 1), logLevel))
+			{
+				sLogMaskItems.clear();
+
+				return false;
+			}
+		}
+
+		sLogMaskItems.push_back(make_pair(item.substr(0, sepPos), logLevel));
+	}
+
+	return true;
+}
+
+/*******************************************************************************
+ * Private
+ ******************************************************************************/
+
+void Log::setLogLevelByMask()
+{
+	for(auto item : sLogMaskItems)
+	{
+		if (item.first.back() == '*')
+		{
+			item.first.pop_back();
+
+			if (mName.compare(0, item.first.length(), item.first) == 0)
+			{
+				mLevel = item.second;
+			}
+		}
+		else
+		{
+			if (item.first == mName)
+			{
+				mLevel = item.second;
+			}
+		}
+	}
+}
+
+bool Log::getLogLevelByString(const string& strLevel, LogLevel& level)
 {
 	static const char* strLevelArray[] =
 	{
@@ -79,9 +155,10 @@ bool Log::setLogLevel(const string& strLevel)
 
 	for(auto i = 0; i <= static_cast<int>(LogLevel::logDEBUG); i++)
 	{
-		if (strLevelUp == strLevelArray[i])
+		if (string(strLevelArray[i]).compare(0, strLevelUp.length(),
+											 strLevelUp) == 0)
 		{
-			sCurrentLevel = static_cast<LogLevel>(i);
+			level = static_cast<LogLevel>(i);
 
 			return true;
 		}
@@ -90,16 +167,47 @@ bool Log::setLogLevel(const string& strLevel)
 	return false;
 }
 
+void Log::splitMask(vector<string>& splitVector, char delim)
+{
+	size_t curPos = 0;
+	size_t delimPos = 0;
+
+	splitVector.clear();
+
+	if (sLogMask.empty())
+	{
+		return;
+	}
+
+	do
+	{
+		delimPos = sLogMask.find(delim, curPos);
+
+		if (delimPos != string::npos)
+		{
+			splitVector.push_back(sLogMask.substr(curPos, delimPos - curPos));
+
+			curPos = ++delimPos;
+
+			if (delimPos == sLogMask.length())
+			{
+				delimPos = string::npos;
+			}
+		}
+		else
+		{
+			splitVector.push_back(sLogMask.substr(curPos, sLogMask.length() -
+												  curPos));
+		}
+	}
+	while (delimPos != string::npos);
+}
+
 /*******************************************************************************
  * LogLine
  ******************************************************************************/
 
 mutex LogLine::mMutex;
-
-LogLine::LogLine()
-{
-
-}
 
 LogLine::~LogLine()
 {

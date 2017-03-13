@@ -21,10 +21,10 @@
 #ifndef SRC_XEN_LOG_HPP_
 #define SRC_XEN_LOG_HPP_
 
-#include <atomic>
 #include <cstring>
 #include <mutex>
 #include <sstream>
+#include <vector>
 
 /***************************************************************************//**
  * @defgroup log Backend log
@@ -145,7 +145,10 @@ public:
 	 */
 	Log(const std::string& name, LogLevel level = sCurrentLevel,
 		bool fileAndLine = sShowFileAndLine) :
-		mName(name),  mLevel(level), mFileAndLine(fileAndLine) {}
+		mName(name),  mLevel(level), mFileAndLine(fileAndLine)
+	{
+		setLogLevelByMask();
+	}
 
 	/**
 	 * Sets log level
@@ -184,16 +187,36 @@ public:
 	 */
 	static bool getShowFileAndLine() { return sShowFileAndLine; }
 
+	/**
+	 * Sets log mask
+	 * @param[in] mask log mask
+	 * @return <i>true</i> if log mask is set successfully
+	 */
+	static bool setLogMask(const std::string& mask);
+
+	/**
+	 * Gets current log mask
+	 * @return current log mask
+	 */
+	static std::string getLogMask() { return sLogMask; }
+
 private:
 
 	friend class LogLine;
 
-	static std::atomic<LogLevel> sCurrentLevel;
-	static std::atomic_bool sShowFileAndLine;
+	static LogLevel sCurrentLevel;
+	static bool sShowFileAndLine;
+	static std::string sLogMask;
+	static std::vector<std::pair<std::string, LogLevel>> sLogMaskItems;
 
 	std::string mName;
 	LogLevel mLevel;
 	bool mFileAndLine;
+
+	void setLogLevelByMask();
+	static void splitMask(std::vector<std::string>& splitVector, char delim);
+	static bool getLogLevelByString(const std::string& strLevel,
+									LogLevel& level);
 };
 
 /// @cond HIDDEN_SYMBOLS
@@ -201,7 +224,6 @@ class LogLine
 {
 public:
 
-	LogLine();
 	virtual ~LogLine();
 
 	std::ostringstream& get(const Log& log, const char* file, int line,
