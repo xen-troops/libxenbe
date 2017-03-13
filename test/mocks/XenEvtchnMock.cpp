@@ -28,6 +28,8 @@
 
 using std::find_if;
 using std::list;
+using std::lock_guard;
+using std::mutex;
 
 using XenBackend::XenException;
 
@@ -43,10 +45,15 @@ struct xenevtchn_handle
 xenevtchn_handle* xenevtchn_open(struct xentoollog_logger* logger,
 								 unsigned open_flags)
 {
-	xenevtchn_handle* xce = static_cast<xenevtchn_handle*>(
-			malloc(sizeof(xenevtchn_handle)));
+	xenevtchn_handle* xce = nullptr;
 
-	xce->mock = new XenEvtchnMock();
+	if (!XenEvtchnMock::getErrorMode())
+	{
+		xce = static_cast<xenevtchn_handle*>(
+				malloc(sizeof(xenevtchn_handle)));
+
+		xce->mock = new XenEvtchnMock();
+	}
 
 	return xce;
 }
@@ -57,6 +64,11 @@ int xenevtchn_close(xenevtchn_handle* xce)
 
 	free(xce);
 
+	if (XenEvtchnMock::getErrorMode())
+	{
+		return -1;
+	}
+
 	return 0;
 }
 
@@ -64,11 +76,21 @@ xenevtchn_port_or_error_t
 xenevtchn_bind_interdomain(xenevtchn_handle* xce, uint32_t domid,
 						   evtchn_port_t remote_port)
 {
+	if (XenEvtchnMock::getErrorMode())
+	{
+		return -1;
+	}
+
 	return xce->mock->bind(domid, remote_port);
 }
 
 int xenevtchn_unbind(xenevtchn_handle* xce, evtchn_port_t port)
 {
+	if (XenEvtchnMock::getErrorMode())
+	{
+		return -1;
+	}
+
 	xce->mock->unbind(port);
 
 	return 0;
@@ -76,6 +98,11 @@ int xenevtchn_unbind(xenevtchn_handle* xce, evtchn_port_t port)
 
 int xenevtchn_notify(xenevtchn_handle* xce, evtchn_port_t port)
 {
+	if (XenEvtchnMock::getErrorMode())
+	{
+		return -1;
+	}
+
 	xce->mock->notifyPort(port);
 
 	return 0;
@@ -83,16 +110,31 @@ int xenevtchn_notify(xenevtchn_handle* xce, evtchn_port_t port)
 
 int xenevtchn_fd(xenevtchn_handle* xce)
 {
+	if (XenEvtchnMock::getErrorMode())
+	{
+		return -1;
+	}
+
 	return xce->mock->getFd();
 }
 
 int xenevtchn_unmask(xenevtchn_handle* xce, evtchn_port_t port)
 {
+	if (XenEvtchnMock::getErrorMode())
+	{
+		return -1;
+	}
+
 	return 0;
 }
 
 xenevtchn_port_or_error_t xenevtchn_pending(xenevtchn_handle* xce)
 {
+	if (XenEvtchnMock::getErrorMode())
+	{
+		return -1;
+	}
+
 	return xce->mock->getPendingPort();
 }
 
@@ -102,6 +144,7 @@ xenevtchn_port_or_error_t xenevtchn_pending(xenevtchn_handle* xce)
 
 XenEvtchnMock* XenEvtchnMock::sLastInstance = nullptr;
 evtchn_port_t XenEvtchnMock::sPort = 0;
+bool XenEvtchnMock::mErrorMode = false;
 
 XenEvtchnMock::XenEvtchnMock() :
 	mLastNotifiedPort(-1),
@@ -154,6 +197,8 @@ void XenEvtchnMock::notifyPort(evtchn_port_t port)
 
 void XenEvtchnMock::signalPort(evtchn_port_t port)
 {
+	lock_guard<mutex> lock(mMutex);
+
 	getBoundPort(port);
 
 	mSignaledPorts.push_back(port);
@@ -168,6 +213,8 @@ void XenEvtchnMock::signalLastBoundPort()
 
 evtchn_port_t XenEvtchnMock::getPendingPort()
 {
+	lock_guard<mutex> lock(mMutex);
+
 	if (mSignaledPorts.size() == 0)
 	{
 		throw XenException("No pending ports");

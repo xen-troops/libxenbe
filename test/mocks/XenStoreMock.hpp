@@ -34,9 +34,9 @@ public:
 
 	XenStoreMock();
 
-	static XenStoreMock* createExternInstance();
-	static XenStoreMock* getExternInstance();
 	static XenStoreMock* getLastInstance() { return sLastInstance; }
+	static void setErrorMode(bool errorMode) { mErrorMode = errorMode; }
+	static bool getErrorMode() { return mErrorMode; }
 
 	int getFd() const { return mPipe.getFd(); }
 	void setDomainPath(unsigned int domId, const std::string& path);
@@ -52,12 +52,13 @@ public:
 private:
 
 	static XenStoreMock* sLastInstance;
-	static XenStoreMock* sExternInstance;
+	static bool mErrorMode;
 
 	Pipe mPipe;
 
-	std::unordered_map<unsigned int, std::string> mDomPathes;
-	std::unordered_map<std::string, std::string> mEntries;
+	static std::unordered_map<unsigned int, std::string> mDomPathes;
+	static std::unordered_map<std::string, std::string> mEntries;
+
 	std::list<std::string> mWatches;
 	std::list<std::string> mChangedEntries;
 };

@@ -18,27 +18,29 @@
  * Copyright (C) 2016 EPAM Systems Inc.
  */
 
+#include "testRingBuffer.hpp"
+
 #include <chrono>
 #include <condition_variable>
 #include <mutex>
 
 #include <catch.hpp>
 
-#include "RingBufferBase.hpp"
 #include "mocks/XenEvtchnMock.hpp"
 #include "mocks/XenGnttabMock.hpp"
-
-extern "C" {
-#include "testProtocol.h"
-}
 
 using std::chrono::milliseconds;
 using std::condition_variable;
 using std::mutex;
+using std::this_thread::sleep_for;
 using std::unique_lock;
 
 using XenBackend::RingBufferInBase;
 using XenBackend::RingBufferOutBase;
+
+static domid_t gDomId = 3;
+static evtchn_port_t gPort = 65;
+static grant_ref_t gRef = 23;
 
 static bool gRespNtf = false;
 static mutex gMutex;
@@ -59,6 +61,10 @@ void sendReq(xentest_req& req, xen_test_front_ring& ring)
 	if (notify)
 	{
 		evtchnMock->signalLastBoundPort();
+	}
+	else
+	{
+		LOG("Req", INFO) << "No notify";
 	}
 }
 
@@ -131,91 +137,6 @@ uint32_t calculateCommand(const xentest_req& req)
 	return value;
 }
 
-class TestRingBufferIn : public RingBufferInBase<xen_test_back_ring,
-												 xen_test_sring,
-												 xentest_req,
-												 xentest_rsp>
-{
-public:
-
-	TestRingBufferIn() :
-		RingBufferInBase<xen_test_back_ring, xen_test_sring,
-						 xentest_req, xentest_rsp>(3, 4, 12)
-		{}
-
-private:
-
-	void processRequest(const xentest_req& req) override
-	{
-		xentest_rsp rsp { req.id };
-
-		rsp.seq = req.seq;
-		rsp.status = 0;
-		rsp.u32data = calculateCommand(req);
-
-		sendResponse(rsp);
-	}
-};
-
-TEST_CASE("RingBufferIn", "[ringbuffer]")
-{
-	TestRingBufferIn ringBuffer;
-
-	ringBuffer.start();
-
-	// get mocks
-	auto gnttabMock = XenGnttabMock::getLastInstance();
-	auto evtchnMock = XenEvtchnMock::getLastInstance();
-
-	// check mocks
-	REQUIRE(gnttabMock != nullptr);
-	REQUIRE(gnttabMock->getLastBuffer() != nullptr);
-	REQUIRE(gnttabMock->getMapBufferSize(gnttabMock->getLastBuffer()) ==
-			XC_PAGE_SIZE);
-
-	REQUIRE(evtchnMock != nullptr);
-
-	evtchnMock->setNotifyCbk(respNotification);
-
-	// init ring
-	xen_test_front_ring ring;
-	auto sring = static_cast<xen_test_sring*>(gnttabMock->getLastBuffer());
-
-	SHARED_RING_INIT(sring);
-	FRONT_RING_INIT(&ring, sring, XC_PAGE_SIZE);
-
-	// prepare commands
-	xentest_command1_req cmd1 {32, 32};
-	xentest_command2_req cmd2 {64};
-	xentest_command3_req cmd3 {16, 16, 32};
-	xentest_req req[3] {{XENTEST_CMD1}, {XENTEST_CMD2}, {XENTEST_CMD3}};
-	req[0].op.command1 = cmd1;
-	req[1].op.command2 = cmd2;
-	req[2].op.command3 = cmd3;
-
-	// send and check
-	int seqNumber = 0;
-
-	for(int i = 0; i < 1000; i++)
-	{
-		for(int j = 0; j < 3; j++)
-		{
-			req[j].seq = seqNumber++;
-
-			sendReq(req[j], ring);
-
-			xentest_rsp rsp {};
-
-			REQUIRE(receiveResp(rsp, ring));
-
-			REQUIRE(req[j].seq == rsp.seq);
-			REQUIRE(calculateCommand(req[j]) == rsp.u32data);
-
-			REQUIRE_FALSE(ringBuffer.isTerminated());
-		}
-	}
-}
-
 uint32_t calculateEvent(const xentest_evt& evt)
 {
 	uint32_t value = 0;
@@ -252,25 +173,111 @@ bool receiveEvent(xentest_event_page* eventPage, xentest_evt* eventBuffer,
 
 		eventPage->in_cons++;
 
+		XenEvtchnMock::getLastInstance()->signalLastBoundPort();
+
 		return true;
 	}
 
 	return false;
 }
 
-class TestRingBufferOut : public RingBufferOutBase<xentest_event_page,
-												   xentest_evt>
+void TestRingBufferIn::processRequest(const xentest_req& req)
 {
-public:
-	TestRingBufferOut() :
-		RingBufferOutBase<xentest_event_page, xentest_evt>(
-			3, 4, 12, XENTEST_IN_RING_OFFS, XENTEST_IN_RING_SIZE)
-	{}
-};
+	xentest_rsp rsp { req.id };
+
+	rsp.seq = req.seq;
+	rsp.status = 0;
+	rsp.u32data = calculateCommand(req);
+
+	sendResponse(rsp);
+}
+
+TEST_CASE("RingBufferIn", "[ringbuffer]")
+{
+	XenEvtchnMock::setErrorMode(false);
+	XenGnttabMock::setErrorMode(false);
+
+	TestRingBufferIn ringBuffer(gDomId, gPort, gRef);
+
+	REQUIRE(ringBuffer.getPort() == gPort);
+	REQUIRE(ringBuffer.getRef() == gRef);
+
+	ringBuffer.start();
+
+	// get mocks
+	auto gnttabMock = XenGnttabMock::getLastInstance();
+	auto evtchnMock = XenEvtchnMock::getLastInstance();
+
+	// check mocks
+	REQUIRE(gnttabMock != nullptr);
+	REQUIRE(gnttabMock->getLastBuffer() != nullptr);
+	REQUIRE(gnttabMock->getMapBufferSize(gnttabMock->getLastBuffer()) ==
+			XC_PAGE_SIZE);
+
+	REQUIRE(evtchnMock != nullptr);
+
+	evtchnMock->setNotifyCbk(respNotification);
+
+	// init ring
+	xen_test_front_ring ring;
+	auto sring = static_cast<xen_test_sring*>(gnttabMock->getLastBuffer());
+
+	SHARED_RING_INIT(sring);
+	FRONT_RING_INIT(&ring, sring, XC_PAGE_SIZE);
+
+	// prepare commands
+	xentest_command1_req cmd1 {32, 32};
+	xentest_command2_req cmd2 {64};
+	xentest_command3_req cmd3 {16, 16, 32};
+	xentest_req req[3] {{XENTEST_CMD1}, {XENTEST_CMD2}, {XENTEST_CMD3}};
+	req[0].op.command1 = cmd1;
+	req[1].op.command2 = cmd2;
+	req[2].op.command3 = cmd3;
+
+	int seqNumber = 0;
+
+	SECTION("Send and receive")
+	{
+		// send and check
+		for(int i = 0; i < 1000; i++)
+		{
+			for(int j = 0; j < 3; j++)
+			{
+				req[j].seq = seqNumber++;
+
+				sendReq(req[j], ring);
+
+				xentest_rsp rsp {};
+
+				REQUIRE(receiveResp(rsp, ring));
+
+				REQUIRE(req[j].seq == rsp.seq);
+				REQUIRE(calculateCommand(req[j]) == rsp.u32data);
+
+				REQUIRE_FALSE(ringBuffer.isTerminated());
+			}
+		}
+	}
+
+	SECTION("Check overflow")
+	{
+		sring->req_prod = ring.nr_ents + 1;
+
+		evtchnMock->signalLastBoundPort();
+
+		// wait when error is detected
+		sleep_for(milliseconds(100));
+
+		REQUIRE(ringBuffer.isTerminated());
+	}
+}
 
 TEST_CASE("RingBufferOut", "[ringbuffer]")
 {
-	TestRingBufferOut ringBuffer;
+	XenEvtchnMock::setErrorMode(false);
+	XenGnttabMock::setErrorMode(false);
+
+	TestRingBufferOut ringBuffer(gDomId, gPort, gRef);
 
 	ringBuffer.start();
 
@@ -304,24 +311,40 @@ TEST_CASE("RingBufferOut", "[ringbuffer]")
 	events[1].op.event2 = evt2;
 	events[2].op.event3 = evt3;
 
-	// send and check
 	int seqNumber = 0;
 
-	for(int i = 0; i < 1000; i++)
+	SECTION("Send and receive")
 	{
-		for(int j = 0; j < 3; j++)
+		// send and check
+		for(int i = 0; i < 1000; i++)
 		{
-			events[j].seq = seqNumber++;
+			for(int j = 0; j < 3; j++)
+			{
+				events[j].seq = seqNumber++;
 
-			ringBuffer.sendEvent(events[j]);
+				ringBuffer.sendEvent(events[j]);
 
-			xentest_evt receivedEvt {};
+				xentest_evt receivedEvt {};
 
-			REQUIRE(receiveEvent(eventPage, eventBuffer, receivedEvt));
+				REQUIRE(receiveEvent(eventPage, eventBuffer, receivedEvt));
 
-			REQUIRE(events[j].seq == receivedEvt.seq);
-			REQUIRE(calculateEvent(events[j]) == calculateEvent(receivedEvt));
-			REQUIRE_FALSE(ringBuffer.isTerminated());
+				REQUIRE(events[j].seq == receivedEvt.seq);
+				REQUIRE(calculateEvent(events[j]) == calculateEvent(receivedEvt));
+				REQUIRE_FALSE(ringBuffer.isTerminated());
+			}
 		}
+	}
+
+	SECTION("Check overflow")
+	{
+		// send and check
+		for(size_t i = 0; i < XENTEST_IN_RING_LEN; i++)
+		{
+			REQUIRE_NOTHROW(ringBuffer.sendEvent(events[0]));
+		}
+
+		REQUIRE_THROWS(ringBuffer.sendEvent(events[0]));
+
+		REQUIRE_FALSE(ringBuffer.isTerminated());
 	}
 }

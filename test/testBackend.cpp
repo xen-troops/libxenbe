@@ -7,11 +7,13 @@
 
 #include <catch.hpp>
 
-#include "BackendBase.hpp"
 #include "Log.hpp"
-
 #include "mocks/XenCtrlMock.hpp"
+#include "mocks/XenEvtchnMock.hpp"
+#include "mocks/XenGnttabMock.hpp"
 #include "mocks/XenStoreMock.hpp"
+#include "testBackend.hpp"
+#include "testFrontendHandler.hpp"
 
 using std::chrono::milliseconds;
 using std::condition_variable;
@@ -20,7 +22,7 @@ using std::string;
 using std::to_string;
 using std::unique_lock;
 
-using XenBackend::BackendBase;
+using XenBackend::FrontendHandlerPtr;
 using XenBackend::Log;
 using XenBackend::LogLevel;
 
@@ -37,27 +39,26 @@ static bool gNewFrontend = false;
 static domid_t gNewFrontDomId = 0;
 static uint16_t gNewFrontDevId = 0;
 
-class TestBackend : public BackendBase
+void TestBackend::onNewFrontend(domid_t domId, uint16_t devId)
 {
-public:
+	unique_lock<mutex> lock(gMutex);
 
-	TestBackend() : BackendBase("TestBackend", gDevName, gDomId, gDevId)
-	{}
+	gNewFrontDomId = domId;
+	gNewFrontDevId = devId;
 
-private:
 
-	void onNewFrontend(domid_t domId, uint16_t devId) override
-	{
-		unique_lock<mutex> lock(gMutex);
+	FrontendHandlerPtr frontendHandler(new TestFrontendHandler(gDevName,
+															   getDomId(),
+															   domId,
+															   getDevId(),
+															   devId));
 
-		gNewFrontDomId = domId;
-		gNewFrontDevId = devId;
+	addFrontendHandler(frontendHandler);
 
-		gNewFrontend = true;
+	gNewFrontend = true;
 
-		gCondVar.notify_all();
-	}
-};
+	gCondVar.notify_all();
+}
 
 bool waitForFrontend()
 {
@@ -76,7 +77,11 @@ bool waitForFrontend()
 
 TEST_CASE("BackendHandler", "[backendhandler]")
 {
-	TestBackend testBackend;
+	XenEvtchnMock::setErrorMode(false);
+	XenGnttabMock::setErrorMode(false);
+	XenStoreMock::setErrorMode(false);
+
+	TestBackend testBackend(gDevName, gDomId, gDevId);
 
 	gNewFrontend = false;
 	gNewFrontDomId = 0;
@@ -91,19 +96,14 @@ TEST_CASE("BackendHandler", "[backendhandler]")
 
 	SECTION("Check adding frontend")
 	{
+		TestFrontendHandler::prepareXenStore("DomU", gDevName,
+											 gDomId, gFrontDomId,
+											 gDevId, gFrontDevId);
+
 		auto ctrlMock = XenCtrlMock::getLastInstance();
 		auto storeMock = XenStoreMock::getLastInstance();
 
 		ctrlMock->addDomInfo({gFrontDomId});
-
-		storeMock->setDomainPath(gFrontDomId, "/local/domain/" +
-								 to_string(gFrontDomId));
-
-		string statePath = string(storeMock->getDomainPath(gFrontDomId)) +
-						   "/device/" + gDevName + "/" +
-						   to_string(gFrontDevId) + "/state";
-
-		storeMock->writeValue(statePath, to_string(XenbusStateUnknown));
 
 		testBackend.start();
 
@@ -111,11 +111,19 @@ TEST_CASE("BackendHandler", "[backendhandler]")
 		REQUIRE(gNewFrontDomId == gFrontDomId);
 		REQUIRE(gNewFrontDevId == gFrontDevId);
 	}
+
+	SECTION("Prevent start if already started")
+	{
+		testBackend.start();
+
+		REQUIRE_THROWS(testBackend.start());
+	}
 }
 
 int main( int argc, char* argv[] )
 {
 	Log::setLogLevel(LogLevel::logDISABLE);
+//	Log::setLogLevel(LogLevel::logINFO);
 //	Log::setLogLevel(LogLevel::logDEBUG);
 
 	int result = Catch::Session().run( argc, argv );

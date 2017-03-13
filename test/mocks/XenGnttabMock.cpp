@@ -43,10 +43,14 @@ struct xengntdev_handle
 xengnttab_handle* xengnttab_open(xentoollog_logger* logger,
 								 unsigned open_flags)
 {
-	xengnttab_handle* xgt = static_cast<xengnttab_handle*>(
-			malloc(sizeof(xengnttab_handle)));
+	xengnttab_handle* xgt = nullptr;
 
-	xgt->mock = new XenGnttabMock();
+	if (!XenGnttabMock::getErrorMode())
+	{
+		xgt = static_cast<xengnttab_handle*>(malloc(sizeof(xengnttab_handle)));
+
+		xgt->mock = new XenGnttabMock();
+	}
 
 	return xgt;
 }
@@ -59,6 +63,11 @@ int xengnttab_close(xengnttab_handle* xgt)
 
 	free(xgt);
 
+	if (XenGnttabMock::getErrorMode())
+	{
+		return -1;
+	}
+
 	return 0;
 }
 
@@ -68,11 +77,21 @@ void* xengnttab_map_domain_grant_refs(xengnttab_handle* xgt,
 									  uint32_t *refs,
 									  int prot)
 {
+	if (XenGnttabMock::getErrorMode())
+	{
+		return nullptr;
+	}
+
 	return xgt->mock->mapGrantRefs(count, domid, refs);
 }
 
 int xengnttab_unmap(xengnttab_handle* xgt, void* start_address, uint32_t count)
 {
+	if (XenGnttabMock::getErrorMode())
+	{
+		return -1;
+	}
+
 	xgt->mock->unmapGrantRefs(start_address, count);
 
 	return 0;
@@ -83,6 +102,7 @@ int xengnttab_unmap(xengnttab_handle* xgt, void* start_address, uint32_t count)
  ******************************************************************************/
 
 XenGnttabMock* XenGnttabMock::sLastInstance = nullptr;
+bool XenGnttabMock::mErrorMode = false;
 
 XenGnttabMock::XenGnttabMock() :
 	mLastMappedAddress(nullptr)

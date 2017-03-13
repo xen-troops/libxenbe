@@ -29,6 +29,8 @@ TEST_CASE("XenStat", "[xenctrl]")
 {
 	XenStat xenStat;
 
+	XenCtrlMock::setErrorMode(false);
+
 	auto mock = XenCtrlMock::getLastInstance();
 
 	xc_domaininfo_t info = {};
@@ -46,19 +48,37 @@ TEST_CASE("XenStat", "[xenctrl]")
 
 		mock->addDomInfo(info);
 	}
-	auto existDoms = xenStat.getExistingDoms();
-	auto runDoms = xenStat.getRunningDoms();
 
-	REQUIRE(existDoms.size() == 8);
-	REQUIRE(runDoms.size() == 3);
-
-	for (size_t i = 0; i < existDoms.size(); i++)
+	SECTION("Check getters")
 	{
-		REQUIRE(existDoms[i] == domIds[i]);
+		auto existDoms = xenStat.getExistingDoms();
+		auto runDoms = xenStat.getRunningDoms();
+
+		REQUIRE(existDoms.size() == 8);
+		REQUIRE(runDoms.size() == 3);
+
+		for (size_t i = 0; i < existDoms.size(); i++)
+		{
+			REQUIRE(existDoms[i] == domIds[i]);
+		}
+
+		for (size_t i = 0; i < runDoms.size(); i++)
+		{
+			REQUIRE(runDoms[i] == domIds[i + 5]);
+		}
 	}
 
-	for (size_t i = 0; i < runDoms.size(); i++)
+	SECTION("Check errors")
 	{
-		REQUIRE(runDoms[i] == domIds[i + 5]);
+		XenCtrlMock::setErrorMode(true);
+
+		REQUIRE_THROWS(auto existDoms = xenStat.getExistingDoms());
 	}
+}
+
+TEST_CASE("XenStatError", "[xenctrl]")
+{
+	XenCtrlMock::setErrorMode(true);
+
+	REQUIRE_THROWS(XenStat xenStat);
 }

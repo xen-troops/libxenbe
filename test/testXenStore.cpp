@@ -80,6 +80,8 @@ static void waitForWatch()
 
 TEST_CASE("XenStore", "[xenstore]")
 {
+	XenStoreMock::setErrorMode(false);
+
 	XenStore xenStore(errorHandling);
 	auto mock = XenStoreMock::getLastInstance();
 
@@ -90,6 +92,13 @@ TEST_CASE("XenStore", "[xenstore]")
 		mock->setDomainPath(3, path);
 
 		REQUIRE_THAT(xenStore.getDomainPath(3), Equals(path));
+	}
+
+	SECTION("Check getting domain path error")
+	{
+		XenStoreMock::setErrorMode(true);
+
+		REQUIRE_THROWS(xenStore.getDomainPath(5));
 	}
 
 	SECTION("Check read/write")
@@ -108,8 +117,26 @@ TEST_CASE("XenStore", "[xenstore]")
 		xenStore.writeString(path, strVal);
 		REQUIRE(xenStore.readString(path) == strVal);
 
-		REQUIRE_THROWS_AS(xenStore.readInt("/non/exist/entry"),
-						  const XenStoreException&);
+		REQUIRE_THROWS(xenStore.readInt("/non/exist/entry"));
+	}
+
+	SECTION("Check read/write error")
+	{
+		XenStoreMock::setErrorMode(true);
+
+		string path = "/local/domain/3/value";
+		int intVal = -34567;
+		unsigned int uintVal = 23567;
+		string strVal = "This is string value";
+
+		REQUIRE_THROWS(xenStore.writeInt(path, intVal));
+		REQUIRE_THROWS(xenStore.readInt(path));
+
+		REQUIRE_THROWS(xenStore.writeUint(path, uintVal));
+		REQUIRE_THROWS(xenStore.readUint(path));
+
+		REQUIRE_THROWS(xenStore.writeString(path, strVal));
+		REQUIRE_THROWS(xenStore.readString(path));
 	}
 
 	SECTION("Check exist/remove")
@@ -183,8 +210,25 @@ TEST_CASE("XenStore", "[xenstore]")
 		xenStore.clearWatch(path);
 	}
 
+	SECTION("Check watches error")
+	{
+		XenStoreMock::setErrorMode(true);
+
+		string path = "/local/domain/3/watch1";
+		string value = "Value1";
+
+		REQUIRE_THROWS(xenStore.setWatch(path, watchCbk1));
+	}
+
 	SECTION("Check errors")
 	{
 		REQUIRE(gNumErrors == 0);
 	}
+}
+
+TEST_CASE("XenStoreError", "[xenstore]")
+{
+	XenStoreMock::setErrorMode(true);
+
+	REQUIRE_THROWS(XenStore xenStore(errorHandling));
 }

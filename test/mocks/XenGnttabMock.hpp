@@ -30,6 +30,8 @@ public:
 	XenGnttabMock();
 
 	static XenGnttabMock* getLastInstance() { return sLastInstance; }
+	static void setErrorMode(bool errorMode) { mErrorMode = errorMode; }
+	static bool getErrorMode() { return mErrorMode; }
 
 	void* mapGrantRefs(uint32_t count, uint32_t domId, uint32_t *refs);
 	void unmapGrantRefs(void* address, uint32_t count);
@@ -40,6 +42,7 @@ public:
 private:
 
 	static XenGnttabMock* sLastInstance;
+	static bool mErrorMode;
 
 	struct MapBuffer
 	{

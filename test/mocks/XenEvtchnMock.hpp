@@ -23,6 +23,7 @@
 
 #include <functional>
 #include <list>
+#include <mutex>
 
 extern "C" {
 #include <xenevtchn.h>
@@ -39,6 +40,8 @@ public:
 	XenEvtchnMock();
 
 	static XenEvtchnMock* getLastInstance() { return sLastInstance; }
+	static void setErrorMode(bool errorMode) { mErrorMode = errorMode; }
+	static bool getErrorMode() { return mErrorMode; }
 
 	int getFd() const { return mPipe.getFd(); }
 	evtchn_port_t getLastNotifiedPort() const { return mLastNotifiedPort; }
@@ -55,6 +58,8 @@ private:
 
 	static XenEvtchnMock* sLastInstance;
 	static evtchn_port_t sPort;
+	static bool mErrorMode;
+
 
 	struct BoundPort
 	{
@@ -72,6 +77,8 @@ private:
 	int mLastBoundPort;
 
 	NotifyCbk mNotifyCbk;
+
+	std::mutex mMutex;
 
 	std::list<BoundPort>::iterator getBoundPort(evtchn_port_t port);
 };

@@ -24,6 +24,8 @@
 #include <xen/io/ring.h>
 #include <xen/grant_table.h>
 
+/// @cond HIDDEN_SYMBOLS
+
 #define XENTEST_CMD1	0x10
 #define XENTEST_CMD2	0x11
 #define XENTEST_CMD3	0x12
@@ -119,5 +121,7 @@ struct xentest_event_page
 	((struct xentest_evt *)((char *)(page) + XENTEST_IN_RING_OFFS))
 #define XENTEST_IN_RING_REF(page, idx) \
 	(XENTEST_IN_RING((page))[(idx) % XENTEST_IN_RING_LEN])
+
+/// @endcond
 
 #endif /* TEST_TESTPROTOCOL_H_ */

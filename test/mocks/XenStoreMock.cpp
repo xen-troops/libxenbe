@@ -28,8 +28,11 @@ extern "C" {
 #include <xenstore.h>
 }
 
+#include "Log.hpp"
+
 using std::find;
 using std::string;
+using std::unordered_map;
 using std::vector;
 
 /*******************************************************************************
@@ -43,12 +46,12 @@ struct xs_handle
 
 xs_handle* xs_open(unsigned long flags)
 {
-	xs_handle* h = static_cast<xs_handle*>(malloc(sizeof(xs_handle)));
+	xs_handle* h = nullptr;
 
-	h->mock = XenStoreMock::getExternInstance();
-
-	if (!h->mock)
+	if (!XenStoreMock::getErrorMode())
 	{
+		h = static_cast<xs_handle*>(malloc(sizeof(xs_handle)));
+
 		h->mock = new XenStoreMock();
 	}
 
@@ -64,11 +67,21 @@ void xs_close(xs_handle* h)
 
 int xs_fileno(struct xs_handle* h)
 {
+	if (XenStoreMock::getErrorMode())
+	{
+		return -1;
+	}
+
 	return h->mock->getFd();
 }
 
 char* xs_get_domain_path(xs_handle* h, unsigned int domid)
 {
+	if (XenStoreMock::getErrorMode())
+	{
+		return nullptr;
+	}
+
 	auto path = h->mock->getDomainPath(domid);
 
 	char* result = nullptr;
@@ -86,6 +99,11 @@ char* xs_get_domain_path(xs_handle* h, unsigned int domid)
 void* xs_read(xs_handle* h, xs_transaction_t t,
 			  const char* path, unsigned int* len)
 {
+	if (XenStoreMock::getErrorMode())
+	{
+		return nullptr;
+	}
+
 	auto value = h->mock->readValue(path);
 
 	char* result = nullptr;
@@ -106,6 +124,11 @@ void* xs_read(xs_handle* h, xs_transaction_t t,
 bool xs_write(xs_handle* h, xs_transaction_t t,
 			  const char* path, const void* data, unsigned int len)
 {
+	if (XenStoreMock::getErrorMode())
+	{
+		return false;
+	}
+
 	h->mock->writeValue(path, static_cast<const char*>(data));
 
 	return true;
@@ -113,12 +136,22 @@ bool xs_write(xs_handle* h, xs_transaction_t t,
 
 bool xs_rm(xs_handle* h, xs_transaction_t t, const char* path)
 {
+	if (XenStoreMock::getErrorMode())
+	{
+		return false;
+	}
+
 	return h->mock->deleteEntry(path);
 }
 
 char **xs_directory(xs_handle* h, xs_transaction_t t,
 					const char* path, unsigned int* num)
 {
+	if (XenStoreMock::getErrorMode())
+	{
+		return nullptr;
+	}
+
 	auto result = h->mock->readDirectory(path);
 
 	size_t totalLength = 0;
@@ -153,16 +186,31 @@ char **xs_directory(xs_handle* h, xs_transaction_t t,
 
 bool xs_watch(xs_handle* h, const char* path, const char* token)
 {
+	if (XenStoreMock::getErrorMode())
+	{
+		return false;
+	}
+
 	return h->mock->watch(path);
 }
 
 bool xs_unwatch(xs_handle* h, const char* path, const char* token)
 {
+	if (XenStoreMock::getErrorMode())
+	{
+		return false;
+	}
+
 	return h->mock->unwatch(path);
 }
 
 char** xs_check_watch(xs_handle* h)
 {
+	if (XenStoreMock::getErrorMode())
+	{
+		return nullptr;
+	}
+
 	char** value = nullptr;
 	string path;
 
@@ -187,31 +235,15 @@ char** xs_check_watch(xs_handle* h)
  * XenStoreMock
  ******************************************************************************/
 
-XenStoreMock* XenStoreMock::sExternInstance = nullptr;
 XenStoreMock* XenStoreMock::sLastInstance = nullptr;
+bool XenStoreMock::mErrorMode = false;
+
+unordered_map<unsigned int, string> XenStoreMock::mDomPathes;
+unordered_map<string, string> XenStoreMock::mEntries;
 
 XenStoreMock::XenStoreMock()
 {
 	sLastInstance = this;
-}
-
-XenStoreMock* XenStoreMock::createExternInstance()
-{
-	if (sExternInstance == nullptr)
-	{
-		sExternInstance = new XenStoreMock();
-	}
-
-	return sExternInstance;
-}
-
-XenStoreMock* XenStoreMock::getExternInstance()
-{
-	auto result = sExternInstance;
-
-	sExternInstance = nullptr;
-
-	return result;
 }
 
 /*******************************************************************************
@@ -220,11 +252,15 @@ XenStoreMock* XenStoreMock::getExternInstance()
 
 void XenStoreMock::setDomainPath(unsigned int domId, const std::string& path)
 {
+	LOG("Store", DEBUG) << path << ", dom id: " << domId;
+
 	mDomPathes[domId] = path;
 }
 
 const char* XenStoreMock::getDomainPath(unsigned int domId)
 {
+	LOG("Store", DEBUG) << "Get path, dom id: " << domId;
+
 	auto it = mDomPathes.find(domId);
 
 	if (it != mDomPathes.end())

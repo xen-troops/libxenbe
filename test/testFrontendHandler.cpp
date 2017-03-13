@@ -24,8 +24,11 @@
 
 #include <catch.hpp>
 
-#include "FrontendHandlerBase.hpp"
+#include "testFrontendHandler.hpp"
+#include "mocks/XenEvtchnMock.hpp"
+#include "mocks/XenGnttabMock.hpp"
 #include "mocks/XenStoreMock.hpp"
+#include "testRingBuffer.hpp"
 
 using std::bind;
 using std::chrono::milliseconds;
@@ -33,10 +36,13 @@ using std::condition_variable;
 using std::mutex;
 using std::stoi;
 using std::string;
+using std::this_thread::sleep_for;
 using std::to_string;
 using std::unique_lock;
 
 using XenBackend::FrontendHandlerBase;
+using XenBackend::RingBufferInBase;
+using XenBackend::RingBufferPtr;
 
 static mutex gMutex;
 static condition_variable gCondVar;
@@ -50,26 +56,37 @@ static XenbusState gBeState = XenbusStateUnknown;
 static bool gOnBind = false;
 static bool gBeStateChanged = false;
 
-class TestFrontendHandler : public FrontendHandlerBase
+void TestFrontendHandler::prepareXenStore(const string& domName,
+										  const string& devName,
+										  domid_t beDomId, domid_t feDomId,
+										  uint16_t beDevId, uint16_t feDevId)
 {
-public:
 
-	TestFrontendHandler() : FrontendHandlerBase("TestFrontend",
-												gDevName,
-												0, gDomId,
-												0, gDevId)
-	{
+	XenStoreMock storeMock;
 
-	}
+	string feDomPath = "/local/domain/" + to_string(feDomId);
+	string beDomPath = "/local/domain/" + to_string(beDomId);
 
-private:
+	storeMock.setDomainPath(feDomId, feDomPath);
+	storeMock.setDomainPath(beDomId, beDomPath);
 
-	void onBind() override
-	{
-		gOnBind = true;
-	}
+	storeMock.writeValue(feDomPath + "/name", domName);
 
-};
+	string fePath = feDomPath + "/device/" + devName + "/" + to_string(feDevId);
+	string bePath = beDomPath + "/backend/" + devName + "/" +
+					to_string(beDomId) + "/" + to_string(beDevId);
+
+	storeMock.writeValue(fePath + "/state", to_string(XenbusStateUnknown));
+}
+
+void TestFrontendHandler::onBind()
+{
+	RingBufferPtr ringBuffer(new TestRingBufferIn(gDomId, 12, 165));
+
+	addRingBuffer(ringBuffer);
+
+	gOnBind = true;
+}
 
 void backendStateChanged(const string& path)
 {
@@ -100,36 +117,31 @@ bool waitBeStateChanged()
 
 TEST_CASE("FrontendHandler", "[frontendhandler]")
 {
-	auto storeMock = XenStoreMock::createExternInstance();
+	XenEvtchnMock::setErrorMode(false);
+	XenGnttabMock::setErrorMode(false);
+	XenStoreMock::setErrorMode(false);
 
-	string feDomPath = "/local/domain/" + to_string(gDomId);
-	string beDomPath = "/local/domain/0";
-	storeMock->setDomainPath(gDomId, feDomPath);
-	storeMock->setDomainPath(0, beDomPath);
-	storeMock->writeValue(feDomPath + "/name", gDomName);
-
-	string fePath = feDomPath + "/device/" + gDevName + "/" + to_string(gDevId);
-	string bePath = beDomPath + "/backend/" + gDevName + "/" +
-					to_string(gDomId) + "/0";
-
-	storeMock->writeValue(fePath + "/state", to_string(XenbusStateUnknown));
+	TestFrontendHandler::prepareXenStore(gDomName, gDevName, 0,
+										 gDomId, 0, gDevId);
 
 	gOnBind = false;
 	gBeStateChanged = false;
 
-	TestFrontendHandler frontendHandler;
+	TestFrontendHandler frontendHandler(gDevName, 0, gDomId, 0, gDevId);
+
+	auto storeMock = XenStoreMock::getLastInstance();
+
+	auto fePath = frontendHandler.getXsFrontendPath();
 
 	frontendHandler.getXenStore().setWatch(
-		bePath + "/state", bind(backendStateChanged,
-		bePath + "/state"));
+		frontendHandler.getXsBackendPath() + "/state", bind(backendStateChanged,
+		frontendHandler.getXsBackendPath() + "/state"));
 
 	SECTION("Check getters")
 	{
 		REQUIRE(frontendHandler.getDomId() == gDomId);
 		REQUIRE(frontendHandler.getDevId() == gDevId);
 		REQUIRE(frontendHandler.getDomName() == gDomName);
-		REQUIRE(frontendHandler.getXsFrontendPath() == fePath);
-		REQUIRE(frontendHandler.getXsBackendPath() == bePath);
 		REQUIRE_FALSE(frontendHandler.isTerminated());
 	}
 
@@ -198,6 +210,35 @@ TEST_CASE("FrontendHandler", "[frontendhandler]")
 
 		REQUIRE(waitBeStateChanged());
 		REQUIRE(gBeState == XenbusStateClosing);
+
+		REQUIRE(frontendHandler.isTerminated());
+	}
+
+	SECTION("Check error")
+	{
+		// Initialize -> InitWait
+		storeMock->writeValue(fePath + "/state",
+							  to_string(XenbusStateInitialising));
+
+		REQUIRE(waitBeStateChanged());
+		REQUIRE(gBeState == XenbusStateInitWait);
+
+		// Initialized -> Connected
+		storeMock->writeValue(fePath + "/state",
+							  to_string(XenbusStateInitialised));
+
+		REQUIRE(waitBeStateChanged());
+		REQUIRE(gBeState == XenbusStateConnected);
+		REQUIRE(gOnBind);
+
+		XenEvtchnMock::setErrorMode(true);
+
+		auto mockEvtchn = XenEvtchnMock::getLastInstance();
+
+		mockEvtchn->signalLastBoundPort();
+
+		// wait when error is detected
+		sleep_for(milliseconds(200));
 
 		REQUIRE(frontendHandler.isTerminated());
 	}

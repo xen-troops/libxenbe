@@ -64,21 +64,67 @@ static void waitForCbk()
 
 TEST_CASE("XenEvtchn", "[xenevtchn]")
 {
+	XenEvtchnMock::setErrorMode(false);
+
 	XenEvtchn eventChannel(3, 24, eventChannelCbk, errorHandling);
 
 	auto mock = XenEvtchnMock::getLastInstance();
 
 	eventChannel.start();
 
-	eventChannel.notify();
+	SECTION("Check notification")
+	{
+		gEventChannelCbk = 0;
+		gNumErrors = 0;
 
-	REQUIRE(eventChannel.getPort() == mock->getLastNotifiedPort());
+		eventChannel.notify();
 
-	mock->signalPort(eventChannel.getPort());
+		REQUIRE(eventChannel.getPort() == mock->getLastNotifiedPort());
 
-	waitForCbk();
+		mock->signalPort(eventChannel.getPort());
 
-	REQUIRE(gEventChannelCbk);
+		waitForCbk();
 
-	REQUIRE(gNumErrors == 0);
+		REQUIRE(gEventChannelCbk);
+
+		REQUIRE(gNumErrors == 0);
+	}
+
+	SECTION("Check second start")
+	{
+		REQUIRE_THROWS(eventChannel.start());
+	}
+
+	SECTION("Check error notify")
+	{
+		XenEvtchnMock::setErrorMode(true);
+
+		REQUIRE_THROWS(eventChannel.notify());
+
+		XenEvtchnMock::setErrorMode(false);
+	}
+
+	SECTION("Check error in thread")
+	{
+		gEventChannelCbk = 0;
+		gNumErrors = 0;
+
+		eventChannel.notify();
+
+		XenEvtchnMock::setErrorMode(true);
+
+		mock->signalPort(eventChannel.getPort());
+
+		waitForCbk();
+
+		REQUIRE_FALSE(gNumErrors == 0);
+	}
+}
+
+TEST_CASE("XenEvtchnError", "[xenevtchn]")
+{
+	XenEvtchnMock::setErrorMode(true);
+
+	REQUIRE_THROWS(XenEvtchn eventChannel(3, 24, eventChannelCbk,
+										  errorHandling));
 }

@@ -39,10 +39,14 @@ xc_interface* xc_interface_open(xentoollog_logger* logger,
 								xentoollog_logger* dombuild_logger,
 								unsigned open_flags)
 {
-	xc_interface* xch = static_cast<xc_interface*>(
-			malloc(sizeof(xc_interface)));
+	xc_interface* xch = nullptr;
 
-	xch->mock = new XenCtrlMock();
+	if (!XenCtrlMock::getErrorMode())
+	{
+		xch = static_cast<xc_interface*>(malloc(sizeof(xc_interface)));
+
+		xch->mock = new XenCtrlMock();
+	}
 
 	return xch;
 }
@@ -53,6 +57,11 @@ int xc_interface_close(xc_interface* xch)
 
 	free(xch);
 
+	if (XenCtrlMock::getErrorMode())
+	{
+		return -1;
+	}
+
 	return 0;
 }
 
@@ -61,6 +70,11 @@ int xc_domain_getinfolist(xc_interface* xch,
 						  unsigned int max_domains,
 						  xc_domaininfo_t* info)
 {
+	if (XenCtrlMock::getErrorMode())
+	{
+		return -1;
+	}
+
 	return xch->mock->getDomInfos(first_domain, max_domains, info);
 }
 
@@ -69,6 +83,7 @@ int xc_domain_getinfolist(xc_interface* xch,
  ******************************************************************************/
 
 XenCtrlMock* XenCtrlMock::sLastInstance = nullptr;
+bool XenCtrlMock::mErrorMode = false;
 
 XenCtrlMock::XenCtrlMock()
 {

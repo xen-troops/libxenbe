@@ -1,5 +1,5 @@
 /*
- *  XenCtrlMock
+ *  Test Backend
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -18,35 +18,22 @@
  * Copyright (C) 2016 EPAM Systems Inc.
  */
 
-#ifndef TEST_MOCKS_XENCTRLMOCK_HPP_
-#define TEST_MOCKS_XENCTRLMOCK_HPP_
+#ifndef TEST_TESTBACKEND_HPP_
+#define TEST_TESTBACKEND_HPP_
 
-#include <list>
+#include "BackendBase.hpp"
 
-extern "C" {
-#include <xenctrl.h>
-}
-
-class XenCtrlMock
+class TestBackend : public XenBackend::BackendBase
 {
 public:
 
-	XenCtrlMock();
-
-	static XenCtrlMock* getLastInstance() { return sLastInstance; }
-	static void setErrorMode(bool errorMode) { mErrorMode = errorMode; }
-	static bool getErrorMode() { return mErrorMode; }
-
-	void addDomInfo(const xc_domaininfo_t& info);
-	int getDomInfos(domid_t firstDom, unsigned int maxDoms,
-					xc_domaininfo_t* info);
+	TestBackend(const std::string& devName, domid_t domId, uint16_t devId) :
+		XenBackend::BackendBase("TestBackend", devName, domId, devId)
+	{}
 
 private:
 
-	static XenCtrlMock* sLastInstance;
-	static bool mErrorMode;
-
-	std::list<xc_domaininfo_t> mDomInfos;
+	void onNewFrontend(domid_t domId, uint16_t devId) override;
 };
 
-#endif /* TEST_MOCKS_XENCTRLMOCK_HPP_ */
+#endif /* TEST_TESTBACKEND_HPP_ */
