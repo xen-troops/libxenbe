@@ -54,7 +54,7 @@ XenInterface::~XenInterface()
 
 void XenInterface::getDomainsInfo(vector<xc_domaininfo_t>& infos)
 {
-	xc_domaininfo_t domainInfo[cDomInfoChunkSize];
+	vector<xc_domaininfo_t> domainInfo(cDomInfoChunkSize);
 
 	int newDomains = cDomInfoChunkSize;
 	int startDomain = 0;
@@ -64,7 +64,8 @@ void XenInterface::getDomainsInfo(vector<xc_domaininfo_t>& infos)
 	while(newDomains == cDomInfoChunkSize)
 	{
 		newDomains = xc_domain_getinfolist(mHandle, startDomain,
-										   cDomInfoChunkSize, domainInfo);
+										   cDomInfoChunkSize,
+										   domainInfo.data());
 
 		if (newDomains < 0)
 		{
