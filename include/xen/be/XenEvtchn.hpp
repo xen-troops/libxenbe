@@ -25,6 +25,7 @@
 #include <thread>
 
 extern "C" {
+#include <xenctrl.h>
 #include <xenevtchn.h>
 }
 

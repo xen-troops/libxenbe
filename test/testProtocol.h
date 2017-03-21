@@ -21,6 +21,7 @@
 #ifndef TEST_TESTPROTOCOL_H_
 #define TEST_TESTPROTOCOL_H_
 
+#include <xenctrl.h>
 #include <xen/io/ring.h>
 #include <xen/grant_table.h>
 

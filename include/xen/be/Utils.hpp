@@ -27,7 +27,7 @@
 #include <unistd.h>
 
 extern "C" {
-#include <xen/xen.h>
+#include <xenctrl.h>
 #include <xen/io/xenbus.h>
 }
 

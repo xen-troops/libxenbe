@@ -26,6 +26,7 @@
 #include <mutex>
 
 extern "C" {
+#include <xenctrl.h>
 #include <xenevtchn.h>
 }
 

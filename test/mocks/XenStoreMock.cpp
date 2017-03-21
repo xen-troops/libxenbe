@@ -25,6 +25,7 @@
 #include <cstring>
 
 extern "C" {
+#include <xenctrl.h>
 #include <xenstore.h>
 }
 

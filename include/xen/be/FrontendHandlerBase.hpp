@@ -30,6 +30,7 @@
 #include <vector>
 
 extern "C" {
+#include <xenctrl.h>
 #include <xen/io/xenbus.h>
 }
 
