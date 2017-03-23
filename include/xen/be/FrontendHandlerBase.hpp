@@ -130,8 +130,7 @@ public:
 	 * @param[in] feDevId             frontend device id
 	 */
 	FrontendHandlerBase(const std::string& name, const std::string& devName,
-						domid_t beDomId, domid_t feDomId,
-						uint16_t beDevId = 0, uint16_t feDevId = 0);
+						domid_t beDomId, domid_t feDomId, uint16_t devId = 0);
 
 	virtual ~FrontendHandlerBase();
 
@@ -143,7 +142,7 @@ public:
 	/**
 	 * Returns frontend device id
 	 */
-	uint16_t getDevId() const {  return mFeDevId; }
+	uint16_t getDevId() const {  return mDevId; }
 
 	/**
 	 * Returns domain name
@@ -241,8 +240,7 @@ private:
 
 	domid_t mBeDomId;
 	domid_t mFeDomId;
-	uint16_t mBeDevId;
-	uint16_t mFeDevId;
+	uint16_t mDevId;
 	std::string mDevName;
 	std::string mDomName;
 

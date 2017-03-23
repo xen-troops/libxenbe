@@ -27,8 +27,8 @@ class TestBackend : public XenBackend::BackendBase
 {
 public:
 
-	TestBackend(const std::string& devName, domid_t domId, uint16_t devId) :
-		XenBackend::BackendBase("TestBackend", devName, domId, devId)
+	TestBackend(const std::string& devName, domid_t domId) :
+		XenBackend::BackendBase("TestBackend", devName, domId)
 	{}
 
 private:

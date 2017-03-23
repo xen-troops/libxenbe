@@ -28,16 +28,15 @@ class TestFrontendHandler : public XenBackend::FrontendHandlerBase
 public:
 
 	TestFrontendHandler(const std::string& devName,
-						domid_t beDomId, domid_t feDomId,
-						uint16_t beDevId, uint16_t feDevId) :
+						domid_t beDomId, domid_t feDomId, uint16_t devId) :
 		XenBackend::FrontendHandlerBase("TestFrontend", devName,
-										beDomId, feDomId, beDevId, feDevId)
+										beDomId, feDomId, devId)
 	{}
 
 	static void prepareXenStore(const std::string& domName,
 								const std::string& devName,
 								domid_t beDomId, domid_t feDomId,
-								uint16_t beDevId, uint16_t feDevId);
+								uint16_t devId);
 
 private:
 

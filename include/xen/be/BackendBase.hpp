@@ -103,10 +103,9 @@ public:
 	 * @param[in] name       optional backend name
 	 * @param[in] deviceName device name
 	 * @param[in] domId      domain id
-	 * @param[in] devId      device id
 	 */
 	BackendBase(const std::string& name, const std::string& deviceName,
-				domid_t domId, uint16_t devId = 0);
+				domid_t domId);
 	virtual ~BackendBase();
 
 	/**
@@ -133,11 +132,6 @@ public:
 	 * Returns domain id
 	 */
 	domid_t getDomId() const { return mDomId; }
-
-	/**
-	 * Returns device id
-	 */
-	uint16_t getDevId() const { return mDevId; }
 
 protected:
 
@@ -175,7 +169,6 @@ private:
 	typedef std::pair<domid_t, uint16_t> FrontendKey;
 
 	domid_t mDomId;
-	uint16_t mDevId;
 	std::string mDeviceName;
 	XenStore mXenStore;
 	XenStat mXenStat;

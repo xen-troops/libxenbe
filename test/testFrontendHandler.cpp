@@ -59,7 +59,7 @@ static bool gBeStateChanged = false;
 void TestFrontendHandler::prepareXenStore(const string& domName,
 										  const string& devName,
 										  domid_t beDomId, domid_t feDomId,
-										  uint16_t beDevId, uint16_t feDevId)
+										  uint16_t devId)
 {
 
 	XenStoreMock storeMock;
@@ -72,9 +72,9 @@ void TestFrontendHandler::prepareXenStore(const string& domName,
 
 	storeMock.writeValue(feDomPath + "/name", domName);
 
-	string fePath = feDomPath + "/device/" + devName + "/" + to_string(feDevId);
+	string fePath = feDomPath + "/device/" + devName + "/" + to_string(devId);
 	string bePath = beDomPath + "/backend/" + devName + "/" +
-					to_string(beDomId) + "/" + to_string(beDevId);
+					to_string(beDomId) + "/" + to_string(devId);
 
 	storeMock.writeValue(fePath + "/state", to_string(XenbusStateUnknown));
 }
@@ -122,12 +122,12 @@ TEST_CASE("FrontendHandler", "[frontendhandler]")
 	XenStoreMock::setErrorMode(false);
 
 	TestFrontendHandler::prepareXenStore(gDomName, gDevName, 0,
-										 gDomId, 0, gDevId);
+										 gDomId, gDevId);
 
 	gOnBind = false;
 	gBeStateChanged = false;
 
-	TestFrontendHandler frontendHandler(gDevName, 0, gDomId, 0, gDevId);
+	TestFrontendHandler frontendHandler(gDevName, 0, gDomId, gDevId);
 
 	auto storeMock = XenStoreMock::getLastInstance();
 

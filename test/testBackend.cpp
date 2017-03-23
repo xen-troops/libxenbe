@@ -30,7 +30,6 @@ static mutex gMutex;
 static condition_variable gCondVar;
 
 static domid_t gDomId = 3;
-static uint16_t gDevId = 4;
 static domid_t gFrontDomId = 5;
 static uint16_t gFrontDevId = 12;
 static const char* gDevName = "test_device";
@@ -50,7 +49,6 @@ void TestBackend::onNewFrontend(domid_t domId, uint16_t devId)
 	FrontendHandlerPtr frontendHandler(new TestFrontendHandler(gDevName,
 															   getDomId(),
 															   domId,
-															   getDevId(),
 															   devId));
 
 	addFrontendHandler(frontendHandler);
@@ -81,7 +79,7 @@ TEST_CASE("BackendHandler", "[backendhandler]")
 	XenGnttabMock::setErrorMode(false);
 	XenStoreMock::setErrorMode(false);
 
-	TestBackend testBackend(gDevName, gDomId, gDevId);
+	TestBackend testBackend(gDevName, gDomId);
 
 	gNewFrontend = false;
 	gNewFrontDomId = 0;
@@ -90,7 +88,6 @@ TEST_CASE("BackendHandler", "[backendhandler]")
 	SECTION("Check getters")
 	{
 		REQUIRE(testBackend.getDomId() == gDomId);
-		REQUIRE(testBackend.getDevId() == gDevId);
 		REQUIRE(testBackend.getDeviceName() == gDevName);
 	}
 
@@ -98,7 +95,7 @@ TEST_CASE("BackendHandler", "[backendhandler]")
 	{
 		TestFrontendHandler::prepareXenStore("DomU", gDevName,
 											 gDomId, gFrontDomId,
-											 gDevId, gFrontDevId);
+											 gFrontDevId);
 
 		auto ctrlMock = XenCtrlMock::getLastInstance();
 		auto storeMock = XenStoreMock::getLastInstance();
