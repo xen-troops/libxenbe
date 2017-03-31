@@ -159,10 +159,7 @@ size_t XenGnttabMock::getMapBufferSize(void* address)
 	return it->second.size;
 }
 
-void XenGnttabMock::checkMapBuffers()
+size_t XenGnttabMock::checkMapBuffers()
 {
-	if (mMapBuffers.size())
-	{
-		throw XenException("Not all buffers are unmapped");
-	}
+	return mMapBuffers.size();
 }

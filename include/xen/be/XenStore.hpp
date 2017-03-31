@@ -61,7 +61,7 @@ public:
 	/**
 	 * Callback which is called when the watch is triggered
 	 */
-	typedef std::function<void()> WatchCallback;
+	typedef std::function<void(const std::string& path)> WatchCallback;
 
 	/**
 	 * @param errorCallback callback called on XS watches error
@@ -144,11 +144,8 @@ public:
 	 * @param path       path to the entry
 	 * @param callback   callback which will be called when the entry is
 	 * changed
-	 * @param initNotify indicates whether the callback should be called after
-	 * adding watch even if there is no changes.
 	 */
-	void setWatch(const std::string& path, WatchCallback callback,
-				  bool initNotify = false);
+	void setWatch(const std::string& path, WatchCallback callback);
 
 	/**
 	 * Clears watch for XS entry change.
@@ -156,18 +153,31 @@ public:
 	 */
 	void clearWatch(const std::string& path);
 
+	/**
+	 * Clears all watches.
+	 */
+	void clearWatches();
+
+	/**
+	 * Starts handling watches.
+	 */
+	void start();
+
+	/**
+	 * Stops handling watches.
+	 */
+	void stop();
+
 private:
 
 	xs_handle*	mXsHandle;
 	ErrorCallback mErrorCallback;
-	bool mCheckWatchResult;
+	std::atomic_bool mStarted;
 	Log mLog;
 
 	std::unordered_map<std::string, WatchCallback> mWatches;
-	std::list<std::string> mInitNotifyWatches;
 
 	std::thread mThread;
-	std::mutex mItfMutex;
 	std::mutex mMutex;
 
 	std::unique_ptr<PollFd> mPollFd;
@@ -176,13 +186,8 @@ private:
 	void release();
 
 	void watchesThread();
-	bool isWatchesEmpty();
-	std::string checkWatches();
 	std::string checkXsWatch();
-	std::string getInitNotifyPath();
 	WatchCallback getWatchCallback(std::string& path);
-	void clearWatches();
-	void waitWatchesThreadFinished();
 };
 
 }

@@ -38,7 +38,7 @@ namespace XenBackend {
 XenStore::XenStore(ErrorCallback errorCallback) :
 	mXsHandle(nullptr),
 	mErrorCallback(errorCallback),
-	mCheckWatchResult(false),
+	mStarted(false),
 	mLog("XenStore")
 {
 	try
@@ -57,7 +57,7 @@ XenStore::~XenStore()
 {
 	clearWatches();
 
-	waitWatchesThreadFinished();
+	stop();
 
 	release();
 }
@@ -198,10 +198,9 @@ bool XenStore::checkIfExist(const string& path)
 	return true;
 }
 
-void XenStore::setWatch(const string& path, WatchCallback callback,
-						bool initNotify)
+void XenStore::setWatch(const string& path, WatchCallback callback)
 {
-	lock_guard<mutex> itfLock(mItfMutex);
+	lock_guard<mutex> lock(mMutex);
 
 	LOG(mLog, DEBUG) << "Set watch: " << path;
 
@@ -210,42 +209,58 @@ void XenStore::setWatch(const string& path, WatchCallback callback,
 		throw XenStoreException("Can't set xs watch for " + path);
 	}
 
-	lock_guard<mutex> lock(mMutex);
-
-	if (initNotify)
-	{
-		mInitNotifyWatches.push_back(path);
-	}
-
-	if (mWatches.size() == 0)
-	{
-		mWatches[path] = callback;
-
-		mThread = thread(&XenStore::watchesThread, this);
-	}
-	else
-	{
-		mWatches[path] = callback;
-	}
+	mWatches[path] = callback;
 }
 
 void XenStore::clearWatch(const string& path)
 {
-	lock_guard<mutex> itfLock(mItfMutex);
+	lock_guard<mutex> lock(mMutex);
 
 	LOG(mLog, DEBUG) << "Clear watch: " << path;
 
 	xs_unwatch(mXsHandle, path.c_str(), "");
 
-	{
-		lock_guard<mutex> lock(mMutex);
+	mWatches.erase(path);
+}
 
-		mWatches.erase(path);
+void XenStore::clearWatches()
+{
+	lock_guard<mutex> lock(mMutex);
+
+	for (auto watch : mWatches)
+	{
+		xs_unwatch(mXsHandle, watch.first.c_str(), "");
 	}
 
-	if (mWatches.empty())
+	mWatches.clear();
+}
+
+void XenStore::start()
+{
+	DLOG(mLog, DEBUG) << "Start";
+
+	if (mStarted)
 	{
-		waitWatchesThreadFinished();
+		throw XenStoreException("XenStore is already started");
+	}
+
+	mStarted = true;
+
+	mThread = thread(&XenStore::watchesThread, this);
+}
+
+void XenStore::stop()
+{
+	DLOG(mLog, DEBUG) << "Start";
+
+	if (mPollFd)
+	{
+		mPollFd->stop();
+	}
+
+	if (mThread.joinable())
+	{
+		mThread.join();
 	}
 }
 
@@ -277,25 +292,6 @@ void XenStore::release()
 	}
 }
 
-string XenStore::checkWatches()
-{
-	string path;
-
-	if (!mCheckWatchResult)
-	{
-		mCheckWatchResult = mPollFd->poll();
-	}
-
-	if (mCheckWatchResult)
-	{
-		path = checkXsWatch();
-
-		mCheckWatchResult = !path.empty();
-	}
-
-	return path;
-}
-
 string XenStore::checkXsWatch()
 {
 	string path;
@@ -312,26 +308,46 @@ string XenStore::checkXsWatch()
 	return path;
 }
 
+XenStore::WatchCallback XenStore::getWatchCallback(string& path)
+{
+	lock_guard<mutex> lock(mMutex);
+
+	WatchCallback callback = nullptr;
+/*
+	auto result = find_if(mWatches.begin(), mWatches.end(),
+						  [&path] (const pair<string, WatchCallback> &val)
+						  { return path.compare(0, val.first.length(),
+						                           val.first) == 0; });
+*/
+	auto result = mWatches.find(path);
+
+	if (result != mWatches.end())
+	{
+		callback = result->second;
+	}
+
+	return callback;
+}
+
 void XenStore::watchesThread()
 {
 	try
 	{
-		while(!isWatchesEmpty())
+		while(mPollFd->poll())
 		{
-			string path = getInitNotifyPath();
+			string path;
 
-			if (path.empty())
+			while(!(path = checkXsWatch()).empty())
 			{
-				path = checkWatches();
-			}
+				LOG(mLog, DEBUG) << "Path triggered: " << path;
 
-			if (!path.empty())
-			{
 				auto callback = getWatchCallback(path);
 
 				if (callback)
 				{
-					callback();
+					LOG(mLog, DEBUG) << "Watch triggered: " << path;
+
+					callback(path);
 				}
 			}
 		}
@@ -347,74 +363,8 @@ void XenStore::watchesThread()
 			LOG(mLog, ERROR) << e.what();
 		}
 	}
-}
 
-string XenStore::getInitNotifyPath()
-{
-	string path;
-
-	if (mInitNotifyWatches.size())
-	{
-		path = mInitNotifyWatches.front();
-		mInitNotifyWatches.pop_front();
-	}
-
-	return path;
-}
-
-XenStore::WatchCallback XenStore::getWatchCallback(string& path)
-{
-	lock_guard<mutex> lock(mMutex);
-
-	WatchCallback callback = nullptr;
-
-	auto result = mWatches.find(path);
-
-	if (result != mWatches.end())
-	{
-		LOG(mLog, DEBUG) << "Watch triggered: " << path;
-
-		callback = result->second;
-	}
-
-	return callback;
-}
-
-bool XenStore::isWatchesEmpty()
-{
-	lock_guard<mutex> lock(mMutex);
-
-	if (mWatches.empty())
-	{
-		return true;
-	}
-
-	return false;
-}
-
-void XenStore::clearWatches()
-{
-	for (auto watch : mWatches)
-	{
-		xs_unwatch(mXsHandle, watch.first.c_str(), "");
-	}
-
-	lock_guard<mutex> lock(mMutex);
-
-	mWatches.clear();
-}
-
-void XenStore::waitWatchesThreadFinished()
-{
-	if (mPollFd)
-	{
-		mPollFd->stop();
-	}
-
-	if (mThread.joinable())
-	{
-		mThread.join();
-	}
+	mStarted = false;
 }
 
 }

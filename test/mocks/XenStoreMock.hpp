@@ -21,7 +21,9 @@
 #ifndef TEST_MOCKS_XENSTOREMOCK_HPP_
 #define TEST_MOCKS_XENSTOREMOCK_HPP_
 
+#include <functional>
 #include <list>
+#include <mutex>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -49,10 +51,17 @@ public:
 	bool unwatch(const std::string& path);
 	bool getChangedEntry(std::string& path);
 
+	typedef std::function<void(const std::string& path,
+							   const std::string& value)> Callback;
+
+	void setWriteValueCbk(Callback cbk) { mCallback = cbk; }
+
 private:
 
 	static XenStoreMock* sLastInstance;
 	static bool mErrorMode;
+
+	std::mutex mMutex;
 
 	Pipe mPipe;
 
@@ -61,6 +70,9 @@ private:
 
 	std::list<std::string> mWatches;
 	std::list<std::string> mChangedEntries;
+	Callback mCallback;
+
+	void pushWatch(const std::string& path);
 };
 
 #endif /* TEST_MOCKS_XENSTOREMOCK_HPP_ */

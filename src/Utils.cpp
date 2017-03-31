@@ -26,9 +26,12 @@
 #include "XenException.hpp"
 
 using std::exception;
+using std::mutex;
 using std::string;
+using std::thread;
 using std::to_string;
 using std::vector;
+using std::unique_lock;
 
 namespace XenBackend {
 
@@ -38,7 +41,7 @@ namespace XenBackend {
 
 string Utils::logDomId(domid_t domId, uint16_t devId)
 {
-	return string("Dom(" + to_string(domId) + "/" + to_string(devId) + ")");
+	return string("Dom(" + to_string(domId) + "/" + to_string(devId) + ") ");
 }
 
 string Utils::logState(xenbus_state state)
@@ -154,6 +157,58 @@ void PollFd::release()
 	if (mPipeFds[PipeType::WRITE] >= 0)
 	{
 		close(mPipeFds[PipeType::WRITE]);
+	}
+}
+
+/*******************************************************************************
+ * AsyncContext
+ ******************************************************************************/
+
+AsyncContext::AsyncContext() :
+	mTerminate(false)
+{
+	mThread = thread(&AsyncContext::run, this);
+}
+
+AsyncContext::~AsyncContext()
+{
+	{
+		unique_lock<mutex> lock(mMutex);
+
+		mTerminate = true;
+
+		mCondVar.notify_all();
+	}
+
+	if (mThread.joinable())
+	{
+		mThread.join();
+	}
+}
+
+void AsyncContext::call(AsyncCall f)
+{
+	unique_lock<mutex> lock(mMutex);
+
+	mAsyncCalls.push_back(f);
+
+	mCondVar.notify_all();
+}
+
+void AsyncContext::run()
+{
+	while(!mTerminate)
+	{
+		unique_lock<mutex> lock(mMutex);
+
+		mCondVar.wait(lock, [this] { return mTerminate ||
+									 !mAsyncCalls.empty(); });
+
+		while(!mAsyncCalls.empty())
+		{
+			mAsyncCalls.front()();
+			mAsyncCalls.pop_front();
+		}
 	}
 }
 

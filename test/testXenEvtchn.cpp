@@ -125,6 +125,5 @@ TEST_CASE("XenEvtchnError", "[xenevtchn]")
 {
 	XenEvtchnMock::setErrorMode(true);
 
-	REQUIRE_THROWS(XenEvtchn eventChannel(3, 24, eventChannelCbk,
-										  errorHandling));
+	REQUIRE_THROWS(XenEvtchn(3, 24, eventChannelCbk, errorHandling));
 }

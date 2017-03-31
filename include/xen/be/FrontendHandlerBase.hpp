@@ -21,12 +21,10 @@
 #ifndef INCLUDE_FRONTENDHANDLERBASE_HPP_
 #define INCLUDE_FRONTENDHANDLERBASE_HPP_
 
-#include <atomic>
 #include <list>
 #include <memory>
 #include <mutex>
 #include <string>
-#include <thread>
 #include <vector>
 
 extern "C" {
@@ -165,9 +163,19 @@ public:
 	XenStore& getXenStore() {  return mXenStore; }
 
 	/**
-	 * Checks if frontend is terminated
+	 * Returns current backend state.
 	 */
-	bool isTerminated();
+	xenbus_state getBackendState() const { return mBackendState; }
+
+	/**
+	 * Starts frontend handling
+	 */
+	void start();
+
+	/**
+	 * Stops frontend handling
+	 */
+	void stop();
 
 protected:
 	/**
@@ -184,15 +192,15 @@ protected:
 	void addRingBuffer(RingBufferPtr ringBuffer);
 
 	/**
-	 * Returns current backend state.
-	 */
-	xenbus_state getBackendState() const { return mBackendState; }
-
-	/**
 	 * Sets backend state.
 	 * @param[in] state new state to set
 	 */
 	void setBackendState(xenbus_state state);
+
+	/**
+	 * Called when the frontend state changed to XenbusStateUnknown
+	 */
+	virtual void onStateUnknown();
 
 	/**
 	 * Called when the frontend state changed to XenbusStateInitialising
@@ -243,6 +251,8 @@ private:
 	uint16_t mDevId;
 	std::string mDevName;
 	std::string mDomName;
+	std::string mBeStatePath;
+	std::string mFeStatePath;
 
 	xenbus_state mBackendState;
 	xenbus_state mFrontendState;
@@ -254,19 +264,20 @@ private:
 
 	std::vector<RingBufferPtr> mRingBuffers;
 
-	std::string mLogId;
+	XenBackend::AsyncContext mAsyncContext;
 
-	mutable std::mutex mMutex;
+	std::mutex mMutex;
 
 	Log mLog;
 
-	void run();
-
+	void release();
 	void initXenStorePathes();
-	void checkTerminatedChannels();
-	void frontendStateChanged(const std::string& path);
+	void frontendStateChanged();
+	void backendStateChanged();
 	void onFrontendStateChanged(xenbus_state state);
+	void onBackendStateChanged(xenbus_state state);
 	void onError(const std::exception& e);
+	void close();
 };
 
 typedef std::shared_ptr<FrontendHandlerBase> FrontendHandlerPtr;

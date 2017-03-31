@@ -22,6 +22,7 @@
 #define SRC_XEN_XENEVTCHN_HPP_
 
 #include <atomic>
+#include <mutex>
 #include <thread>
 
 extern "C" {
@@ -112,6 +113,12 @@ public:
 	 */
 	xenevtchn_port_or_error_t getPort() const { return mPort; }
 
+	/**
+	 * Sets error callback
+	 * @param errorCallback error callback
+	 */
+	void setErrorCallback(ErrorCallback errorCallback);
+
 private:
 
 	xenevtchn_port_or_error_t mPort;
@@ -121,6 +128,7 @@ private:
 	std::atomic_bool mStarted;
 	Log mLog;
 
+	std::mutex mMutex;
 	std::thread mThread;
 	std::unique_ptr<PollFd> mPollFd;
 

@@ -23,7 +23,6 @@
 #include "Log.hpp"
 
 using std::bind;
-using std::placeholders::_1;
 
 namespace XenBackend {
 
@@ -33,12 +32,10 @@ namespace XenBackend {
 
 RingBufferBase::RingBufferBase(domid_t domId, evtchn_port_t port,
 							   grant_ref_t ref) :
-	mEventChannel(domId, port, [this] { onReceiveIndication(); },
-				  bind(&RingBufferBase::onError, this, _1)),
+	mEventChannel(domId, port, [this] { onReceiveIndication(); }),
 	mBuffer(domId, ref, PROT_READ | PROT_WRITE),
 	mPort(port),
 	mRef(ref),
-	mTerminated(false),
 	mLog("RingBuffer")
 {
 	LOG(mLog, DEBUG) << "Create ring buffer, port: " << mPort
@@ -67,15 +64,9 @@ void RingBufferBase::stop()
 	mEventChannel.stop();
 }
 
-/*******************************************************************************
- * Private
- ******************************************************************************/
-
-void RingBufferBase::onError(const std::exception& e)
+void RingBufferBase::setErrorCallback(ErrorCallback errorCallback)
 {
-	LOG(mLog, ERROR) << e.what();
-
-	mTerminated = true;
+	mEventChannel.setErrorCallback(errorCallback);
 }
 
 }

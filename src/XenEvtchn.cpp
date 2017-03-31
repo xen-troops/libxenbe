@@ -104,6 +104,13 @@ void XenEvtchn::notify()
 	}
 }
 
+void XenEvtchn::setErrorCallback(ErrorCallback errorCallback)
+{
+	lock_guard<mutex> lock(mMutex);
+
+	mErrorCallback = errorCallback;
+}
+
 /*******************************************************************************
  * Private
  ******************************************************************************/
@@ -178,6 +185,8 @@ void XenEvtchn::eventThread()
 	}
 	catch(const exception& e)
 	{
+		lock_guard<mutex> lock(mMutex);
+
 		if (mErrorCallback)
 		{
 			mErrorCallback(e);

@@ -54,7 +54,7 @@ static const char* gDevName = "test_device";
 
 static XenbusState gBeState = XenbusStateUnknown;
 static bool gOnBind = false;
-static bool gBeStateChanged = false;
+static std::list<XenbusState> gBeStates;
 
 void TestFrontendHandler::prepareXenStore(const string& domName,
 										  const string& devName,
@@ -74,9 +74,11 @@ void TestFrontendHandler::prepareXenStore(const string& domName,
 
 	string fePath = feDomPath + "/device/" + devName + "/" + to_string(devId);
 	string bePath = beDomPath + "/backend/" + devName + "/" +
-					to_string(beDomId) + "/" + to_string(devId);
+					to_string(feDomId) + "/" + to_string(devId);
 
 	storeMock.writeValue(fePath + "/state", to_string(XenbusStateUnknown));
+
+	storeMock.writeValue(bePath + "/state", to_string(XenbusStateUnknown));
 }
 
 void TestFrontendHandler::onBind()
@@ -88,14 +90,11 @@ void TestFrontendHandler::onBind()
 	gOnBind = true;
 }
 
-void backendStateChanged(const string& path)
+void backendStateChanged(XenbusState state)
 {
 	unique_lock<mutex> lock(gMutex);
 
-	gBeState = static_cast<XenbusState>(
-			stoi(XenStoreMock::getLastInstance()->readValue(path)));
-
-	gBeStateChanged = true;
+	gBeStates.push_back(state);
 
 	gCondVar.notify_all();
 }
@@ -105,12 +104,13 @@ bool waitBeStateChanged()
 	unique_lock<mutex> lock(gMutex);
 
 	if (!gCondVar.wait_for(lock, milliseconds(1000),
-						   [] { return gBeStateChanged; } ))
+						   [] { return !gBeStates.empty(); } ))
 	{
 		return false;
 	}
 
-	gBeStateChanged = false;
+	gBeState = gBeStates.front();
+	gBeStates.pop_front();
 
 	return true;
 }
@@ -124,25 +124,31 @@ TEST_CASE("FrontendHandler", "[frontendhandler]")
 	TestFrontendHandler::prepareXenStore(gDomName, gDevName, 0,
 										 gDomId, gDevId);
 
+	gBeStates.clear();
 	gOnBind = false;
-	gBeStateChanged = false;
 
 	TestFrontendHandler frontendHandler(gDevName, 0, gDomId, gDevId);
 
 	auto storeMock = XenStoreMock::getLastInstance();
 
-	auto fePath = frontendHandler.getXsFrontendPath();
+	storeMock->setWriteValueCbk([&] (const string& path, const string& value)
+		{ if (path == frontendHandler.getXsBackendPath() + "/state") {
+			backendStateChanged(static_cast<XenbusState>(stoi(value))); }});
 
-	frontendHandler.getXenStore().setWatch(
-		frontendHandler.getXsBackendPath() + "/state", bind(backendStateChanged,
-		frontendHandler.getXsBackendPath() + "/state"));
+	auto fePath = frontendHandler.getXsFrontendPath();
+	auto bePath = frontendHandler.getXsBackendPath();
+
+	frontendHandler.start();
+
+	REQUIRE(waitBeStateChanged());
+	REQUIRE(gBeState == XenbusStateInitialising);
 
 	SECTION("Check getters")
 	{
 		REQUIRE(frontendHandler.getDomId() == gDomId);
 		REQUIRE(frontendHandler.getDevId() == gDevId);
 		REQUIRE(frontendHandler.getDomName() == gDomName);
-		REQUIRE_FALSE(frontendHandler.isTerminated());
+		REQUIRE_FALSE(frontendHandler.getBackendState() > XenbusStateConnected);
 	}
 
 	SECTION("Check states 1")
@@ -169,7 +175,8 @@ TEST_CASE("FrontendHandler", "[frontendhandler]")
 		REQUIRE(waitBeStateChanged());
 		REQUIRE(gBeState == XenbusStateClosing);
 
-		REQUIRE(frontendHandler.isTerminated());
+		REQUIRE(waitBeStateChanged());
+		REQUIRE(gBeState == XenbusStateClosed);
 	}
 
 	SECTION("Check states 2")
@@ -190,7 +197,8 @@ TEST_CASE("FrontendHandler", "[frontendhandler]")
 		REQUIRE(waitBeStateChanged());
 		REQUIRE(gBeState == XenbusStateClosing);
 
-		REQUIRE(frontendHandler.isTerminated());
+		REQUIRE(waitBeStateChanged());
+		REQUIRE(gBeState == XenbusStateClosed);
 	}
 
 	SECTION("Check states 3")
@@ -211,7 +219,36 @@ TEST_CASE("FrontendHandler", "[frontendhandler]")
 		REQUIRE(waitBeStateChanged());
 		REQUIRE(gBeState == XenbusStateClosing);
 
-		REQUIRE(frontendHandler.isTerminated());
+		REQUIRE(waitBeStateChanged());
+		REQUIRE(gBeState == XenbusStateClosed);
+	}
+
+	SECTION("Check states 4")
+	{
+		// Initialize -> InitWait
+		storeMock->writeValue(fePath + "/state",
+							  to_string(XenbusStateInitialising));
+
+		REQUIRE(waitBeStateChanged());
+		REQUIRE(gBeState == XenbusStateInitWait);
+
+		// Initialized -> Connected
+		storeMock->writeValue(fePath + "/state",
+							  to_string(XenbusStateInitialised));
+
+		REQUIRE(waitBeStateChanged());
+		REQUIRE(gBeState == XenbusStateConnected);
+		REQUIRE(gOnBind);
+
+		// BE Closing -> Closing
+		storeMock->writeValue(bePath + "/state",
+							  to_string(XenbusStateClosing));
+
+		REQUIRE(waitBeStateChanged());
+		REQUIRE(gBeState == XenbusStateClosing);
+
+		REQUIRE(waitBeStateChanged());
+		REQUIRE(gBeState == XenbusStateClosed);
 	}
 
 	SECTION("Check error")
@@ -237,9 +274,10 @@ TEST_CASE("FrontendHandler", "[frontendhandler]")
 
 		mockEvtchn->signalLastBoundPort();
 
-		// wait when error is detected
-		sleep_for(milliseconds(200));
+		REQUIRE(waitBeStateChanged());
+		REQUIRE(gBeState == XenbusStateClosing);
 
-		REQUIRE(frontendHandler.isTerminated());
+		REQUIRE(waitBeStateChanged());
+		REQUIRE(gBeState == XenbusStateClosed);
 	}
 }

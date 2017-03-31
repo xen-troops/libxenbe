@@ -21,7 +21,11 @@
 #ifndef SRC_XEN_UTILS_HPP_
 #define SRC_XEN_UTILS_HPP_
 
+#include <atomic>
+#include <condition_variable>
+#include <list>
 #include <string>
+#include <thread>
 
 #include <poll.h>
 #include <unistd.h>
@@ -63,7 +67,8 @@ public:
  * The PollFd class also opens an additional pipe. On poll() method it waits
  * for both: the defined file descriptor and the internal pipe file descriptor.
  * The internal pipe file descriptor breaks poll() when stop() method is
- * invoked. It is used to unblock poll() when an object using PollFd is deleted.
+ * invoked. It is used to unblock poll() when an object using PollFd is been
+ * deleted.
  * @ingroup backend
  ******************************************************************************/
 class PollFd
@@ -108,6 +113,43 @@ private:
 
 	void init(int fd, short int events);
 	void release();
+};
+
+/***************************************************************************//**
+ * Implements asynchronous context
+ *
+ * This class allows to call a function asynchronously.
+ *
+ * @ingroup backend
+ ******************************************************************************/
+class AsyncContext
+{
+public:
+
+	/**
+	 * Callback which is called when the event channel is notified
+	 */
+	typedef std::function<void()> AsyncCall;
+
+	AsyncContext();
+	~AsyncContext();
+
+	/**
+	 * Adds a function to be called asynchronously
+	 * @param f
+	 */
+	void call(AsyncCall f);
+
+private:
+
+	std::atomic_bool mTerminate;
+	std::mutex mMutex;
+	std::condition_variable mCondVar;
+	std::thread mThread;
+
+	std::list<AsyncCall> mAsyncCalls;
+
+	void run();
 };
 
 }

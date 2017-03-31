@@ -72,7 +72,7 @@ TEST_CASE("XenStat", "[xenctrl]")
 	{
 		XenCtrlMock::setErrorMode(true);
 
-		REQUIRE_THROWS(auto existDoms = xenStat.getExistingDoms());
+		REQUIRE_THROWS(xenStat.getExistingDoms());
 	}
 }
 
@@ -80,5 +80,5 @@ TEST_CASE("XenStatError", "[xenctrl]")
 {
 	XenCtrlMock::setErrorMode(true);
 
-	REQUIRE_THROWS(XenStat xenStat);
+	REQUIRE_THROWS(XenStat());
 }

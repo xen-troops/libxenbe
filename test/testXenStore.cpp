@@ -53,7 +53,7 @@ static void errorHandling(const exception& e)
 	gNumErrors++;
 }
 
-static void watchCbk1()
+static void watchCbk1(const string& path)
 {
 	unique_lock<mutex> lock(gMutex);
 
@@ -62,7 +62,7 @@ static void watchCbk1()
 	gCondVar.notify_all();
 }
 
-static void watchCbk2()
+static void watchCbk2(const string& path)
 {
 	unique_lock<mutex> lock(gMutex);
 
@@ -83,6 +83,9 @@ TEST_CASE("XenStore", "[xenstore]")
 	XenStoreMock::setErrorMode(false);
 
 	XenStore xenStore(errorHandling);
+
+	xenStore.start();
+
 	auto mock = XenStoreMock::getLastInstance();
 
 	SECTION("Check getting domain path")
@@ -91,7 +94,7 @@ TEST_CASE("XenStore", "[xenstore]")
 
 		mock->setDomainPath(3, path);
 
-		REQUIRE_THAT(xenStore.getDomainPath(3), Equals(path));
+		REQUIRE_THAT(xenStore.getDomainPath(3), Catch::Matchers::Equals(path));
 	}
 
 	SECTION("Check getting domain path error")
@@ -230,5 +233,5 @@ TEST_CASE("XenStoreError", "[xenstore]")
 {
 	XenStoreMock::setErrorMode(true);
 
-	REQUIRE_THROWS(XenStore xenStore(errorHandling));
+	REQUIRE_THROWS(XenStore(errorHandling));
 }

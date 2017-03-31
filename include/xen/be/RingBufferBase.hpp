@@ -21,7 +21,6 @@
 #ifndef INCLUDE_RINGBUFFERBASE_HPP_
 #define INCLUDE_RINGBUFFERBASE_HPP_
 
-#include <atomic>
 #include <mutex>
 
 extern "C" {
@@ -72,11 +71,6 @@ public:
 	void stop();
 
 	/**
-	 * Returns whether ring buffer is terminated.
-	 */
-	bool isTerminated() const { return mTerminated; }
-
-	/**
 	 * Returns event channel port.
 	 */
 	evtchn_port_t getPort() const { return mPort; }
@@ -85,6 +79,12 @@ public:
 	 * Returns grant table reference.
 	 */
 	grant_ref_t getRef() const { return mRef; }
+
+	/**
+	 * Sets error callback
+	 * @param errorCallback error callback
+	 */
+	void setErrorCallback(ErrorCallback errorCallback);
 
 protected:
 
@@ -110,11 +110,8 @@ private:
 	evtchn_port_t mPort;
 	grant_ref_t mRef;
 
-	std::atomic_bool mTerminated;
-
 	Log mLog;
 
-	void onError(const std::exception& e);
 	void onIndication();
 };
 

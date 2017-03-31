@@ -20,6 +20,8 @@
 
 #include "ExampleBackend.hpp"
 
+#include <csignal>
+
 using XenBackend::FrontendHandlerPtr;
 using XenBackend::RingBufferPtr;
 
@@ -125,6 +127,19 @@ void ExampleBackend::onNewFrontend(domid_t domId, uint16_t devId)
 }
 //! [onNewFrontend]
 
+void waitSignals()
+{
+	sigset_t set;
+	int signal;
+
+	sigemptyset(&set);
+	sigaddset(&set, SIGINT);
+	sigaddset(&set, SIGTERM);
+	sigprocmask(SIG_BLOCK, &set, nullptr);
+
+	sigwait(&set,&signal);
+}
+
 //! [main]
 int main(int argc, char *argv[])
 {
@@ -132,10 +147,12 @@ int main(int argc, char *argv[])
 	{
 		// Create backend
 		ExampleBackend exampleBackend;
-		// Start backend
+
 		exampleBackend.start();
-		// Block till backend is finished
-		exampleBackend.waitForFinish();
+
+		waitSignals();
+
+		exampleBackend.stop();
 	}
 	catch(const std::exception& e)
 	{

@@ -37,7 +37,7 @@ public:
 	void unmapGrantRefs(void* address, uint32_t count);
 	void* getLastBuffer() const { return mLastMappedAddress; }
 	size_t getMapBufferSize(void* address);
-	void checkMapBuffers();
+	size_t checkMapBuffers();
 
 private:
 

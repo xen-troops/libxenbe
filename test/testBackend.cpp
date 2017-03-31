@@ -79,11 +79,17 @@ TEST_CASE("BackendHandler", "[backendhandler]")
 	XenGnttabMock::setErrorMode(false);
 	XenStoreMock::setErrorMode(false);
 
+	TestFrontendHandler::prepareXenStore("DomU", gDevName,
+										 gDomId, gFrontDomId,
+										 gFrontDevId);
+
 	TestBackend testBackend(gDevName, gDomId);
 
 	gNewFrontend = false;
 	gNewFrontDomId = 0;
 	gNewFrontDevId = 0;
+
+	testBackend.start();
 
 	SECTION("Check getters")
 	{
@@ -93,28 +99,16 @@ TEST_CASE("BackendHandler", "[backendhandler]")
 
 	SECTION("Check adding frontend")
 	{
-		TestFrontendHandler::prepareXenStore("DomU", gDevName,
-											 gDomId, gFrontDomId,
-											 gFrontDevId);
-
 		auto ctrlMock = XenCtrlMock::getLastInstance();
 		auto storeMock = XenStoreMock::getLastInstance();
 
-		ctrlMock->addDomInfo({gFrontDomId});
-
-		testBackend.start();
-
 		REQUIRE(waitForFrontend());
+
 		REQUIRE(gNewFrontDomId == gFrontDomId);
 		REQUIRE(gNewFrontDevId == gFrontDevId);
 	}
 
-	SECTION("Prevent start if already started")
-	{
-		testBackend.start();
-
-		REQUIRE_THROWS(testBackend.start());
-	}
+	testBackend.stop();
 }
 
 int main( int argc, char* argv[] )

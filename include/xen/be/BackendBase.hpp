@@ -24,7 +24,7 @@
 #define INCLUDE_BACKENDBASE_HPP_
 
 #include <atomic>
-#include <map>
+#include <list>
 #include <memory>
 #include <string>
 #include <utility>
@@ -57,19 +57,13 @@ class BackendException : public XenException
  * The main functionality is detecting a new frontend and deleting
  * terminated frontends.
  *
- * This class periodically checks if a new domain appears with Xen control API.
- * Then it looks up for a specific path in Xen store where the frontend
- * stores its state. If the path exists we assume that an expected frontend is
- * running or will be run on this domain. At same loop the backend class checks
- * FrontendHandlerBase::isTerminated() method and deleted the terminated
- * frontend. The frontend is terminated when during operation a critical
- * error occurs.
+ * This class checks Xen store to detect new frontends.
  *
  * Once the new frontend is detected it calls onNewFrontend() method.
  * This method should be overridden by the custom instance of BackendBase class.
  * It is expected that in this method a new instance of FrontendHandlerBase
  * class will be created and added with addFrontendHandler() method.
- * Adding the frontend handler is required to allow the backend class monitoring
+ * Adding the frontend handler is required to allow the backend class deleting
  * terminated frontends.
  *
  * The client should create a class inherited from BackendBase and implement
@@ -87,10 +81,7 @@ class BackendException : public XenException
  * reason it may override getNewFrontend() method.
  *
  * When the backend instance is created, it should be started by calling start()
- * method. The backend will process frontends till it is deleted or stop()
- * method is called. If the backend instance is used in the main loop,
- * waitForFinish() method may be used to block the main loop till it is
- * finished.
+ * method. The backend will process frontends till stop() method is called.
  *
  * @snippet ExampleBackend.cpp main
  *
@@ -136,17 +127,6 @@ public:
 protected:
 
 	/**
-	 * Is called periodically to check if a new frontend's appeared.
-	 * In order to change the way a new domain is detected the client may
-	 * override this method.
-	 *
-	 * @param[out] domId domain id
-	 * @param[out] devId device id
-	 * @return <i>true</i> if new frontend is detected
-	 */
-	virtual bool getNewFrontend(domid_t& domId, uint16_t& devId);
-
-	/**
 	 * Is called when new frontend detected.
 	 * Basically the client should create
 	 * the instance of FrontendHandlerBase class and pass it to
@@ -164,26 +144,17 @@ protected:
 
 private:
 
-	const int cPollFrontendIntervalMs = 500; //!< Frontend poll interval in msec
-
-	typedef std::pair<domid_t, uint16_t> FrontendKey;
-
 	domid_t mDomId;
 	std::string mDeviceName;
 	XenStore mXenStore;
-	XenStat mXenStat;
-
-	std::map<FrontendKey, FrontendHandlerPtr> mFrontendHandlers;
-
-	std::thread mThread;
-	std::atomic_bool mTerminate;
-	std::atomic_bool mTerminated;
+	std::list<FrontendHandlerPtr> mFrontendHandlers;
+	std::list<domid_t> mFrontendDomIds;
 
 	Log mLog;
 
-	void run();
-	void createFrontendHandler(const FrontendKey& ids);
-	void checkTerminatedFrontends();
+	void frontendListChanged(const std::string& path);
+	void deviceListChanged(const std::string& path, domid_t domId);
+	FrontendHandlerPtr getFrontendHandler(domid_t domId, uint16_t devId);
 };
 
 }

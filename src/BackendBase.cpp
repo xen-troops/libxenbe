@@ -20,20 +20,21 @@
 
 #include "BackendBase.hpp"
 
+#include <algorithm>
 #include <chrono>
-#include <thread>
 
 #include "Utils.hpp"
 
-using std::chrono::milliseconds;
-using std::exception;
+using std::bind;
+using std::find_if;
+using std::list;
 using std::make_pair;
 using std::unique_ptr;
 using std::pair;
+using std::placeholders::_1;
 using std::stoi;
 using std::string;
-using std::this_thread::sleep_for;
-using std::thread;
+using std::to_string;
 using std::vector;
 
 namespace XenBackend {
@@ -79,9 +80,6 @@ BackendBase::BackendBase(const string& name, const string& deviceName,
 	mDomId(domId),
 	mDeviceName(deviceName),
 	mXenStore(),
-	mXenStat(),
-	mTerminate(false),
-	mTerminated(true),
 	mLog(name.empty() ? "Backend" : name)
 {
 	LOG(mLog, DEBUG) << "Create backend, device: " << deviceName << ", "
@@ -91,6 +89,11 @@ BackendBase::BackendBase(const string& name, const string& deviceName,
 BackendBase::~BackendBase()
 {
 	stop();
+
+	for(auto frontend : mFrontendHandlers)
+	{
+		frontend->stop();
+	}
 
 	mFrontendHandlers.clear();
 
@@ -103,35 +106,20 @@ BackendBase::~BackendBase()
 
 void BackendBase::start()
 {
-	if (!mTerminated)
-	{
-		throw BackendException("Already started");
-	}
+	mXenStore.start();
 
-	LOG(mLog, INFO) << "Start";
+	string frontendListPath = mXenStore.getDomainPath(mDomId) + "/backend/" +
+							  mDeviceName;
 
-	mTerminate = false;
-	mTerminated = false;
-
-	mThread = thread(&BackendBase::run, this);
+	mXenStore.setWatch(frontendListPath,
+					   bind(&BackendBase::frontendListChanged, this, _1));
 }
 
 void BackendBase::stop()
 {
-	LOG(mLog, INFO) << "Stop";
+	mXenStore.clearWatches();
 
-	mTerminate = true;
-
-	waitForFinish();
-}
-
-
-void BackendBase::waitForFinish()
-{
-	if (mThread.joinable())
-	{
-		mThread.join();
-	}
+	mXenStore.stop();
 }
 
 /*******************************************************************************
@@ -140,116 +128,118 @@ void BackendBase::waitForFinish()
 
 void BackendBase::addFrontendHandler(FrontendHandlerPtr frontendHandler)
 {
-	FrontendKey key(make_pair(frontendHandler->getDomId(),
-					frontendHandler->getDevId()));
-
-	mFrontendHandlers.insert(make_pair(key, frontendHandler));
-}
-
-bool BackendBase::getNewFrontend(domid_t& domId, uint16_t& devId)
-{
-	for (auto dom : mXenStat.getExistingDoms())
+	if (getFrontendHandler(frontendHandler->getDomId(),
+						   frontendHandler->getDevId()))
 	{
-		if (dom == mDomId)
-		{
-			continue;
-		}
-
-		string basePath = mXenStore.getDomainPath(dom) +
-						  "/device/" + mDeviceName;
-
-		for (string strDev : mXenStore.readDirectory(basePath))
-		{
-			uint16_t dev = stoi(strDev);
-
-			if (mFrontendHandlers.find(make_pair(dom, dev)) ==
-				mFrontendHandlers.end())
-			{
-				string statePath = basePath + "/" + strDev + "/state";
-
-				if (mXenStore.checkIfExist(statePath))
-				{
-					domId = dom;
-					devId = dev;
-
-					return true;
-				}
-			}
-		}
+		throw BackendException("Frontend already exists");
 	}
 
-	return false;
+	frontendHandler->start();
+
+	mFrontendHandlers.push_back(frontendHandler);
 }
 
 /*******************************************************************************
  * Private
  ******************************************************************************/
 
-void BackendBase::run()
+void BackendBase::frontendListChanged(const string& path)
 {
-	LOG(mLog, INFO) << "Wait for frontend";
+	LOG(mLog, DEBUG) << "Frontend list changed";
 
-	try
+	// create list of existing doms
+	list<domid_t> removeDomIds = mFrontendDomIds;
+
+	for (auto frontend : mXenStore.readDirectory(path))
 	{
-		while(!mTerminate)
+		domid_t domId = stoi(frontend);
+
+		auto it = find_if(mFrontendDomIds.begin(), mFrontendDomIds.end(),
+						  [domId](domid_t val) { return val == domId; });
+
+		if (it == mFrontendDomIds.end())
 		{
-			domid_t domId = 0;
-			uint16_t devId = 0;
+			// add new dom
+			mFrontendDomIds.push_back(domId);
 
-			if (getNewFrontend(domId, devId))
-			{
-				createFrontendHandler(make_pair(domId, devId));
-			}
-
-			checkTerminatedFrontends();
-
-			sleep_for(milliseconds(cPollFrontendIntervalMs));
-		}
-	}
-	catch(const exception& e)
-	{
-		LOG(mLog, ERROR) << e.what();
-	}
-
-	mTerminated = true;
-
-	LOG(mLog, INFO) << "Terminated";
-}
-
-void BackendBase::createFrontendHandler(const FrontendKey& ids)
-{
-	if ((ids.first > 0) &&
-		(mFrontendHandlers.find(ids) == mFrontendHandlers.end()))
-	{
-		LOG(mLog, INFO) << "Create new frontend: "
-						<< Utils::logDomId(ids.first, ids.second);
-
-		onNewFrontend(ids.first, ids.second);
-	}
-	else
-	{
-		LOG(mLog, WARNING) << "Domain already exists: "
-						   << Utils::logDomId(ids.first, ids.second);
-	}
-}
-
-void BackendBase::checkTerminatedFrontends()
-{
-	for (auto it = mFrontendHandlers.begin(); it != mFrontendHandlers.end();)
-	{
-		if (it->second->isTerminated())
-		{
-			LOG(mLog, INFO) << "Delete terminated frontend: "
-							<< Utils::logDomId(it->first.first,
-											   it->first.second);
-
-			it = mFrontendHandlers.erase(it);
+			mXenStore.setWatch(path + "/" + to_string(domId),
+							   bind(&BackendBase::deviceListChanged, this,
+									_1, domId));
 		}
 		else
 		{
-			++it;
+			// remove existing from removing list
+			removeDomIds.remove(domId);
 		}
 	}
+
+	// remove not existing doms
+	for(auto domId : removeDomIds)
+	{
+		mFrontendDomIds.remove(domId);
+
+		mXenStore.clearWatch(path + "/" + to_string(domId));
+	}
+}
+
+void BackendBase::deviceListChanged(const string& path, domid_t domId)
+{
+	LOG(mLog, DEBUG) << "Device list changed";
+
+	list<FrontendHandlerPtr> removeFrontends;
+
+	// create list of existing frontend
+	for (auto frontend : mFrontendHandlers)
+	{
+		if (frontend->getDomId() == domId)
+		{
+			removeFrontends.push_back(frontend);
+		}
+	}
+
+	for (auto device : mXenStore.readDirectory(path))
+	{
+		uint16_t devId = stoi(device);
+
+		auto frontend = getFrontendHandler(domId, devId);
+
+		if (!frontend)
+		{
+			LOG(mLog, INFO) << "Create new frontend: "
+							<< Utils::logDomId(domId, devId);
+
+			onNewFrontend(domId, devId);
+		}
+		else
+		{
+			// remove existing frontend from removing list
+			removeFrontends.remove(frontend);
+		}
+	}
+
+	// remove not existing frontends
+	for(auto frontend : removeFrontends)
+	{
+		frontend->stop();
+
+		mFrontendHandlers.remove(frontend);
+	}
+}
+
+FrontendHandlerPtr BackendBase::getFrontendHandler(domid_t domId,
+												   uint16_t devId)
+{
+	auto it = find_if(mFrontendHandlers.begin(), mFrontendHandlers.end(),
+					  [&](FrontendHandlerPtr frontend) {
+							return (frontend->getDomId() == domId) &&
+								   (frontend->getDevId() == devId); } );
+
+	if (it != mFrontendHandlers.end())
+	{
+		return *it;
+	}
+
+	return FrontendHandlerPtr();
 }
 
 }

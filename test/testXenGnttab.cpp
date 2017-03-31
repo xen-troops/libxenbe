@@ -54,6 +54,6 @@ TEST_CASE("XenGnttab", "[xengnttab]")
 	{
 		XenGnttabMock::setErrorMode(true);
 
-		REQUIRE_THROWS(XenGnttabBuffer xenBuffer(3, 14));
+		REQUIRE_THROWS(XenGnttabBuffer(3, 14));
 	}
 }

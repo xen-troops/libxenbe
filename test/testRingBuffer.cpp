@@ -46,6 +46,8 @@ static bool gRespNtf = false;
 static mutex gMutex;
 static condition_variable gCondVar;
 
+static bool gError = false;
+
 void sendReq(xentest_req& req, xen_test_front_ring& ring)
 {
 	auto evtchnMock = XenEvtchnMock::getLastInstance();
@@ -192,12 +194,21 @@ void TestRingBufferIn::processRequest(const xentest_req& req)
 	sendResponse(rsp);
 }
 
+void errorCallback(const std::exception& e)
+{
+	gError = true;
+}
+
 TEST_CASE("RingBufferIn", "[ringbuffer]")
 {
 	XenEvtchnMock::setErrorMode(false);
 	XenGnttabMock::setErrorMode(false);
 
+	gError = false;
+
 	TestRingBufferIn ringBuffer(gDomId, gPort, gRef);
+
+	ringBuffer.setErrorCallback(errorCallback);
 
 	REQUIRE(ringBuffer.getPort() == gPort);
 	REQUIRE(ringBuffer.getRef() == gRef);
@@ -254,7 +265,7 @@ TEST_CASE("RingBufferIn", "[ringbuffer]")
 				REQUIRE(req[j].seq == rsp.seq);
 				REQUIRE(calculateCommand(req[j]) == rsp.u32data);
 
-				REQUIRE_FALSE(ringBuffer.isTerminated());
+				REQUIRE_FALSE(gError);
 			}
 		}
 	}
@@ -268,7 +279,7 @@ TEST_CASE("RingBufferIn", "[ringbuffer]")
 		// wait when error is detected
 		sleep_for(milliseconds(100));
 
-		REQUIRE(ringBuffer.isTerminated());
+		REQUIRE(gError);
 	}
 }
 
@@ -277,7 +288,11 @@ TEST_CASE("RingBufferOut", "[ringbuffer]")
 	XenEvtchnMock::setErrorMode(false);
 	XenGnttabMock::setErrorMode(false);
 
+	gError = false;
+
 	TestRingBufferOut ringBuffer(gDomId, gPort, gRef);
+
+	ringBuffer.setErrorCallback(errorCallback);
 
 	ringBuffer.start();
 
@@ -330,7 +345,7 @@ TEST_CASE("RingBufferOut", "[ringbuffer]")
 
 				REQUIRE(events[j].seq == receivedEvt.seq);
 				REQUIRE(calculateEvent(events[j]) == calculateEvent(receivedEvt));
-				REQUIRE_FALSE(ringBuffer.isTerminated());
+				REQUIRE_FALSE(gError);
 			}
 		}
 	}
@@ -345,6 +360,6 @@ TEST_CASE("RingBufferOut", "[ringbuffer]")
 
 		REQUIRE_THROWS(ringBuffer.sendEvent(events[0]));
 
-		REQUIRE_FALSE(ringBuffer.isTerminated());
+		REQUIRE_FALSE(gError);
 	}
 }
