@@ -251,7 +251,7 @@ void XenStore::start()
 
 void XenStore::stop()
 {
-	DLOG(mLog, DEBUG) << "Start";
+	DLOG(mLog, DEBUG) << "Stop";
 
 	if (mPollFd)
 	{
