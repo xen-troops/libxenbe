@@ -34,9 +34,9 @@ RingBufferBase::RingBufferBase(domid_t domId, evtchn_port_t port,
 							   grant_ref_t ref) :
 	mEventChannel(domId, port, [this] { onReceiveIndication(); }),
 	mBuffer(domId, ref, PROT_READ | PROT_WRITE),
+	mLog("RingBuffer"),
 	mPort(port),
-	mRef(ref),
-	mLog("RingBuffer")
+	mRef(ref)
 {
 	LOG(mLog, DEBUG) << "Create ring buffer, port: " << mPort
 					 << ", ref: " << mRef;
