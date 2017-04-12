@@ -26,6 +26,7 @@
 #include "Utils.hpp"
 
 using std::bind;
+using std::exception;
 using std::find_if;
 using std::list;
 using std::make_pair;
@@ -208,7 +209,14 @@ void BackendBase::deviceListChanged(const string& path, domid_t domId)
 			LOG(mLog, INFO) << "Create new frontend: "
 							<< Utils::logDomId(domId, devId);
 
-			onNewFrontend(domId, devId);
+			try
+			{
+				onNewFrontend(domId, devId);
+			}
+			catch(const exception& e)
+			{
+				LOG(mLog, ERROR) << e.what();
+			}
 		}
 		else
 		{
