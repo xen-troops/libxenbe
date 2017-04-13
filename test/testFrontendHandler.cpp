@@ -90,6 +90,10 @@ void TestFrontendHandler::onBind()
 	gOnBind = true;
 }
 
+void TestFrontendHandler::onClosing()
+{
+}
+
 void backendStateChanged(XenbusState state)
 {
 	unique_lock<mutex> lock(gMutex);

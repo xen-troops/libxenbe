@@ -178,12 +178,21 @@ public:
 	void stop();
 
 protected:
+
 	/**
 	 * Is called when the frontend goes to the initialized state.
 	 * The client should override this method and create data channels when it
 	 * is invoked.
 	 */
 	virtual void onBind() = 0;
+
+	/**
+	 * Is called when the frontend goes to the closing state.
+	 * The client should override this method and free data channels when it
+	 * is invoked.
+	 */
+	virtual void onClosing() = 0;
+
 
 	/**
 	 * Adds new ring buffer to the frontend handler.
@@ -277,7 +286,7 @@ private:
 	void onFrontendStateChanged(xenbus_state state);
 	void onBackendStateChanged(xenbus_state state);
 	void onError(const std::exception& e);
-	void close();
+	void close(xenbus_state stateAfterClose);
 };
 
 typedef std::shared_ptr<FrontendHandlerBase> FrontendHandlerPtr;

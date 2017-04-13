@@ -100,6 +100,13 @@ void ExampleFrontendHandler::onBind()
 }
 //! [onBind]
 
+//! [onClosing]
+void ExampleFrontendHandler::onClosing()
+{
+	// free allocate on bind resources
+	mOutRingBuffer.reset();
+}
+
 //! [onSomeEvent]
 void ExampleFrontendHandler::onSomeEvent()
 {

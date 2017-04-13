@@ -87,6 +87,9 @@ private:
 	// Override onBind method
 	void onBind() override;
 
+	// Override onClosing method
+	void onClosing() override;
+
 	// Called when we need to send optional event to the frontend
 	void onSomeEvent();
 

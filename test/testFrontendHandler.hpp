@@ -41,6 +41,7 @@ public:
 private:
 
 	void onBind() override;
+	void onClosing() override;
 };
 
 

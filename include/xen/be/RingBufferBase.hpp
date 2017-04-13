@@ -105,12 +105,12 @@ protected:
 	 */
 	XenGnttabBuffer mBuffer;
 
+	Log mLog;
+
 private:
 
 	evtchn_port_t mPort;
 	grant_ref_t mRef;
-
-	Log mLog;
 
 	void onIndication();
 };
@@ -287,8 +287,17 @@ public:
 
 		if (static_cast<int>(mPage->in_prod - mPage->in_cons) >= mNumEvents)
 		{
-			throw RingBufferException("Ring buffer overflow");
+			LOG(mLog, WARNING) << "Ring buffer overflow, port: " << getPort()
+							   <<", prod: " << mPage->in_prod
+							   << ", cons: " << mPage->in_cons;
+
+			return;
 		}
+
+		LOG(mLog, DEBUG) << "Send event, port: " << getPort()
+						 <<", prod: " << mPage->in_prod
+						 << ", cons: " << mPage->in_cons
+						 << ", num events: " << mNumEvents;
 
 		mEventBuffer[mPage->in_prod % mNumEvents] = event;
 

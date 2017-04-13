@@ -105,7 +105,7 @@ void FrontendHandlerBase::stop()
 
 	mXenStore.stop();
 
-	close();
+	close(XenbusStateClosed);
 }
 
 /*******************************************************************************
@@ -158,7 +158,7 @@ void FrontendHandlerBase::onStateInitializing()
 		LOG(mLog, WARNING) << Utils::logDomId(mFeDomId, mDevId)
 						   << "Frontend restarted";
 
-		close();
+		close(XenbusStateInitWait);
 	}
 
 	if (mBackendState == XenbusStateInitialising ||
@@ -200,7 +200,7 @@ void FrontendHandlerBase::onStateClosing()
 	if (mBackendState == XenbusStateInitialised ||
 		mBackendState == XenbusStateConnected)
 	{
-		close();
+		close(XenbusStateInitWait);
 	}
 }
 
@@ -209,7 +209,7 @@ void FrontendHandlerBase::onStateClosed()
 	if (mBackendState == XenbusStateInitialised ||
 		mBackendState == XenbusStateConnected)
 	{
-		close();
+		close(XenbusStateInitWait);
 	}
 }
 
@@ -328,9 +328,7 @@ void FrontendHandlerBase::onBackendStateChanged(xenbus_state state)
 {
 	if (state == XenbusStateClosing || state == XenbusStateClosed)
 	{
-		release();
-
-		setBackendState(XenbusStateClosed);
+		close(XenbusStateClosed);
 	}
 	else if (state == XenbusStateInitialising)
 	{
@@ -342,7 +340,7 @@ void FrontendHandlerBase::onError(const std::exception& e)
 {
 	LOG(mLog, ERROR) << Utils::logDomId(mFeDomId, mDevId) << e.what();
 
-	mAsyncContext.call([this] () { close(); });
+	mAsyncContext.call([this] () { close(XenbusStateInitWait); });
 }
 
 void FrontendHandlerBase::release()
@@ -359,15 +357,17 @@ void FrontendHandlerBase::release()
 	mRingBuffers.clear();
 }
 
-void FrontendHandlerBase::close()
+void FrontendHandlerBase::close(xenbus_state stateAfterClose)
 {
 	if (mBackendState != XenbusStateClosed)
 	{
 		setBackendState(XenbusStateClosing);
 
+		onClosing();
+
 		release();
 
-		setBackendState(XenbusStateClosed);
+		setBackendState(stateAfterClose);
 	}
 }
 
