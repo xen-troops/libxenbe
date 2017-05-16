@@ -257,6 +257,8 @@ void FrontendHandlerBase::frontendStateChanged()
 {
 	if (!mXenStore.checkIfExist(mFeStatePath))
 	{
+		stop();
+
 		return;
 	}
 
