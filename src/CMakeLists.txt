@@ -15,4 +15,12 @@ set(SOURCES
 
 add_library(xenbe SHARED ${SOURCES})
 
+target_link_libraries(xenbe
+	xenstore
+	xenevtchn
+	xengnttab
+	xenctrl
+	pthread
+)
+
 install(TARGETS xenbe LIBRARY DESTINATION lib)
