@@ -349,17 +349,4 @@ TEST_CASE("RingBufferOut", "[ringbuffer]")
 			}
 		}
 	}
-
-	SECTION("Check overflow")
-	{
-		// send and check
-		for(size_t i = 0; i < XENTEST_IN_RING_LEN; i++)
-		{
-			REQUIRE_NOTHROW(ringBuffer.sendEvent(events[0]));
-		}
-
-		REQUIRE_THROWS(ringBuffer.sendEvent(events[0]));
-
-		REQUIRE_FALSE(gError);
-	}
 }
