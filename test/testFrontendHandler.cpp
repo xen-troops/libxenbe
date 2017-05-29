@@ -184,7 +184,7 @@ TEST_CASE("FrontendHandler", "[frontendhandler]")
 		REQUIRE(waitBeStateChanged());
 		REQUIRE(gBeState == XenbusStateClosed);
 
-		frontendHandler.stop();
+    frontendHandler.stop();
 	}
 
 	SECTION("Check states 2")

@@ -371,7 +371,7 @@ void FrontendHandlerBase::close(xenbus_state stateAfterClose)
 
 		setBackendState(XenbusStateClosed);
 
-		setBackendState(stateAfterClose);
+    setBackendState(stateAfterClose);
 	}
 }
 
