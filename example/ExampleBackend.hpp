@@ -27,7 +27,7 @@
 #include <xen/be/FrontendHandlerBase.hpp>
 #include <xen/be/RingBufferBase.hpp>
 
-#include "testProtocol.h"
+#include "../test/testProtocol.h"
 
 //! [ExampleOutRingBuffer]
 class ExampleOutRingBuffer : public XenBackend::RingBufferOutBase
