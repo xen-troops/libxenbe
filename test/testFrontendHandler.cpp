@@ -153,6 +153,8 @@ TEST_CASE("FrontendHandler", "[frontendhandler]")
 		REQUIRE(frontendHandler.getDevId() == gDevId);
 		REQUIRE(frontendHandler.getDomName() == gDomName);
 		REQUIRE_FALSE(frontendHandler.getBackendState() > XenbusStateConnected);
+
+		frontendHandler.stop();
 	}
 
 	SECTION("Check states 1")
@@ -181,6 +183,8 @@ TEST_CASE("FrontendHandler", "[frontendhandler]")
 
 		REQUIRE(waitBeStateChanged());
 		REQUIRE(gBeState == XenbusStateClosed);
+
+    frontendHandler.stop();
 	}
 
 	SECTION("Check states 2")
@@ -203,6 +207,8 @@ TEST_CASE("FrontendHandler", "[frontendhandler]")
 
 		REQUIRE(waitBeStateChanged());
 		REQUIRE(gBeState == XenbusStateClosed);
+
+		frontendHandler.stop();
 	}
 
 	SECTION("Check states 3")
@@ -225,6 +231,8 @@ TEST_CASE("FrontendHandler", "[frontendhandler]")
 
 		REQUIRE(waitBeStateChanged());
 		REQUIRE(gBeState == XenbusStateClosed);
+
+		frontendHandler.stop();
 	}
 
 	SECTION("Check states 4")
@@ -253,6 +261,8 @@ TEST_CASE("FrontendHandler", "[frontendhandler]")
 
 		REQUIRE(waitBeStateChanged());
 		REQUIRE(gBeState == XenbusStateClosed);
+
+		frontendHandler.stop();
 	}
 
 	SECTION("Check error")
@@ -283,5 +293,7 @@ TEST_CASE("FrontendHandler", "[frontendhandler]")
 
 		REQUIRE(waitBeStateChanged());
 		REQUIRE(gBeState == XenbusStateClosed);
+
+		frontendHandler.stop();
 	}
 }
