@@ -272,7 +272,7 @@ public:
 				static_cast<uint8_t*>(mBuffer.get()) + offset)),
 		mNumEvents(size/sizeof(Event))
 	{
-		mPage->in_prod = 0;
+		mPage->in_prod = mPage->in_cons;
 
 		xen_wmb();
 	}
