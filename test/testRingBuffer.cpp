@@ -316,6 +316,7 @@ TEST_CASE("RingBufferOut", "[ringbuffer]")
 			XENTEST_IN_RING_OFFS);
 
 	eventPage->in_cons = 0;
+	eventPage->in_prod = 0;
 
 	// prepare commands
 	xentest_event1 evt1 {32, 32};
@@ -348,5 +349,7 @@ TEST_CASE("RingBufferOut", "[ringbuffer]")
 				REQUIRE_FALSE(gError);
 			}
 		}
+
+		ringBuffer.stop();
 	}
 }
