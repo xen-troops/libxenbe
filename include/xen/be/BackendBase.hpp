@@ -146,14 +146,15 @@ private:
 
 	domid_t mDomId;
 	std::string mDeviceName;
+	std::string mFrontendsPath;
 	XenStore mXenStore;
 	std::list<FrontendHandlerPtr> mFrontendHandlers;
-	std::list<domid_t> mFrontendDomIds;
 
 	Log mLog;
 
 	void frontendListChanged(const std::string& path);
-	void deviceListChanged(const std::string& path, domid_t domId);
+	void frontendPathChanged(const std::string& path, domid_t domId,
+							 uint16_t devId);
 	FrontendHandlerPtr getFrontendHandler(domid_t domId, uint16_t devId);
 };
 
