@@ -273,9 +273,9 @@ private:
 
 	std::vector<RingBufferPtr> mRingBuffers;
 
-	XenBackend::AsyncContext mAsyncContext;
-
 	std::mutex mMutex;
+
+	XenBackend::AsyncContext mAsyncContext;
 
 	Log mLog;
 
