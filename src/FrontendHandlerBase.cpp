@@ -88,6 +88,8 @@ FrontendHandlerBase::~FrontendHandlerBase()
 
 void FrontendHandlerBase::start()
 {
+	lock_guard<mutex> lock(mMutex);
+
 	mXenStore.start();
 
 	setBackendState(XenbusStateInitialising);
@@ -105,7 +107,11 @@ void FrontendHandlerBase::stop()
 
 	mXenStore.stop();
 
-	close(XenbusStateClosed);
+	mAsyncContext.stop();
+
+	lock_guard<mutex> lock(mMutex);
+
+	release();
 }
 
 /*******************************************************************************
@@ -114,8 +120,6 @@ void FrontendHandlerBase::stop()
 
 void FrontendHandlerBase::addRingBuffer(RingBufferPtr ringBuffer)
 {
-	lock_guard<mutex> lock(mMutex);
-
 	LOG(mLog, INFO) << Utils::logDomId(mFeDomId, mDevId)
 					<< "Add ring buffer, ref: "
 					<< ringBuffer->getRef() << ", port: "
@@ -129,8 +133,6 @@ void FrontendHandlerBase::addRingBuffer(RingBufferPtr ringBuffer)
 
 void FrontendHandlerBase::setBackendState(xenbus_state state)
 {
-	lock_guard<mutex> lock(mMutex);
-
 	if (state == mBackendState)
 	{
 		return;
@@ -255,10 +257,10 @@ void FrontendHandlerBase::initXenStorePathes()
 
 void FrontendHandlerBase::frontendStateChanged()
 {
+	lock_guard<mutex> lock(mMutex);
+
 	if (!mXenStore.checkIfExist(mFeStatePath))
 	{
-		stop();
-
 		return;
 	}
 
@@ -280,6 +282,8 @@ void FrontendHandlerBase::frontendStateChanged()
 
 void FrontendHandlerBase::backendStateChanged()
 {
+	lock_guard<mutex> lock(mMutex);
+
 	if (!mXenStore.checkIfExist(mBeStatePath))
 	{
 		return;
@@ -342,13 +346,12 @@ void FrontendHandlerBase::onError(const std::exception& e)
 {
 	LOG(mLog, ERROR) << Utils::logDomId(mFeDomId, mDevId) << e.what();
 
-	mAsyncContext.call([this] () { close(XenbusStateInitWait); });
+	mAsyncContext.call([this] () { lock_guard<mutex> lock(mMutex);
+								   close(XenbusStateInitWait); });
 }
 
 void FrontendHandlerBase::release()
 {
-	lock_guard<mutex> lock(mMutex);
-
 	// stop is required to prevent calling processRequest during deletion
 
 	for(auto ringBuffer : mRingBuffers)

@@ -297,6 +297,14 @@ const char* XenStoreMock::readValue(const std::string& path)
 		return it->second.c_str();
 	}
 
+	for(auto entry : mEntries)
+	{
+		if (entry.first.compare(0, path.length(), path) == 0)
+		{
+			return "";
+		}
+	}
+
 	return nullptr;
 }
 
