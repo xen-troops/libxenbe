@@ -227,6 +227,8 @@ void XenStore::clearWatches()
 {
 	lock_guard<mutex> lock(mMutex);
 
+	LOG(mLog, DEBUG) << "Clear watches";
+
 	for (auto watch : mWatches)
 	{
 		xs_unwatch(mXsHandle, watch.first.c_str(), "");
