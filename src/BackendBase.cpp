@@ -80,7 +80,7 @@ BackendBase::BackendBase(const string& name, const string& deviceName,
 						 domid_t domId) :
 	mDomId(domId),
 	mDeviceName(deviceName),
-	mXenStore(),
+	mXenStore(bind(&BackendBase::onError, this, _1)),
 	mLog(name.empty() ? "Backend" : name)
 {
 
@@ -226,6 +226,11 @@ FrontendHandlerPtr BackendBase::getFrontendHandler(domid_t domId,
 	}
 
 	return FrontendHandlerPtr();
+}
+
+void BackendBase::onError(const exception& e)
+{
+	LOG(mLog, ERROR) << e.what();
 }
 
 }

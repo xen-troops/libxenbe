@@ -156,6 +156,7 @@ private:
 	void frontendPathChanged(const std::string& path, domid_t domId,
 							 uint16_t devId);
 	FrontendHandlerPtr getFrontendHandler(domid_t domId, uint16_t devId);
+	void onError(const std::exception& e);
 };
 
 }
