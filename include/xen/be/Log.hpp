@@ -200,6 +200,15 @@ public:
 	 */
 	static std::string getLogMask() { return sLogMask; }
 
+	/**
+	 * Sets file to write log
+	 * @param[in] fileName file name
+	 */
+	static void setStreamBuffer(std::streambuf* streamBuffer)
+	{
+		mOutput.rdbuf(streamBuffer);
+	}
+
 private:
 
 	friend class LogLine;
@@ -208,6 +217,8 @@ private:
 	static bool sShowFileAndLine;
 	static std::string sLogMask;
 	static std::vector<std::pair<std::string, LogLevel>> sLogMaskItems;
+
+	static std::ostream mOutput;
 
 	std::string mName;
 	LogLevel mLevel;

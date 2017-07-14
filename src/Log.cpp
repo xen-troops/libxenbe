@@ -56,6 +56,8 @@ bool Log::sShowFileAndLine(false);
 string Log::sLogMask;
 vector<pair<string, LogLevel>> Log::sLogMaskItems;
 
+std::ostream Log::mOutput(cout.rdbuf());
+
 /// @cond HIDDEN_SYMBOLS
 
 size_t LogLine::sAlignmentLength = 0;
@@ -217,8 +219,7 @@ LogLine::~LogLine()
 
 		lock_guard<mutex> lock(mMutex);
 
-		cout << mStream.str();
-		cout.flush();
+		Log::mOutput << mStream.str();
 	}
 }
 
