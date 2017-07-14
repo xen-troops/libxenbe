@@ -81,7 +81,7 @@ bool Log::setLogMask(const string& mask)
 
 	vector<string> items;
 
-	splitMask(items, ';');
+	splitMask(items, ',');
 
 	sLogMaskItems.clear();
 
