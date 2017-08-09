@@ -253,6 +253,11 @@ void XenStore::start()
 
 void XenStore::stop()
 {
+	if (!mStarted)
+	{
+		return;
+	}
+
 	DLOG(mLog, DEBUG) << "Stop";
 
 	if (mPollFd)
@@ -264,6 +269,8 @@ void XenStore::stop()
 	{
 		mThread.join();
 	}
+
+	mStarted = false;
 }
 
 /*******************************************************************************
@@ -365,8 +372,6 @@ void XenStore::watchesThread()
 			LOG(mLog, ERROR) << e.what();
 		}
 	}
-
-	mStarted = false;
 }
 
 }
