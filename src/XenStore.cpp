@@ -301,15 +301,21 @@ void XenStore::release()
 	}
 }
 
-string XenStore::checkXsWatch()
+string XenStore::readXsWatch()
 {
 	string path;
+	unsigned int num;
 
-	auto result = xs_check_watch(mXsHandle);
+	auto result = xs_read_watch(mXsHandle, &num);
 
 	if (result)
 	{
 		path = result[XS_WATCH_PATH];
+
+		if (path != result[XS_WATCH_TOKEN])
+		{
+			path.clear();
+		}
 
 		free(result);
 	}
@@ -344,9 +350,9 @@ void XenStore::watchesThread()
 	{
 		while(mPollFd->poll())
 		{
-			string path;
+			auto path = readXsWatch();
 
-			while(!(path = checkXsWatch()).empty())
+			if (!path.empty())
 			{
 				LOG(mLog, DEBUG) << "Path triggered: " << path;
 
