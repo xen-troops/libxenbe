@@ -204,7 +204,7 @@ void XenStore::setWatch(const string& path, WatchCallback callback)
 
 	LOG(mLog, DEBUG) << "Set watch: " << path;
 
-	if (!xs_watch(mXsHandle, path.c_str(), ""))
+	if (!xs_watch(mXsHandle, path.c_str(), path.c_str()))
 	{
 		throw XenStoreException("Can't set xs watch for " + path);
 	}
@@ -218,7 +218,10 @@ void XenStore::clearWatch(const string& path)
 
 	LOG(mLog, DEBUG) << "Clear watch: " << path;
 
-	xs_unwatch(mXsHandle, path.c_str(), "");
+	if (!xs_unwatch(mXsHandle, path.c_str(), path.c_str()))
+	{
+		LOG(mLog, ERROR) << "Failed to clear watch: " << path;
+	}
 
 	mWatches.erase(path);
 }
@@ -227,14 +230,20 @@ void XenStore::clearWatches()
 {
 	lock_guard<mutex> lock(mMutex);
 
-	LOG(mLog, DEBUG) << "Clear watches";
-
-	for (auto watch : mWatches)
+	if (mWatches.size())
 	{
-		xs_unwatch(mXsHandle, watch.first.c_str(), "");
-	}
+		LOG(mLog, DEBUG) << "Clear watches";
 
-	mWatches.clear();
+		for (auto watch : mWatches)
+		{
+			if (!xs_unwatch(mXsHandle, watch.first.c_str(), watch.first.c_str()))
+			{
+				LOG(mLog, ERROR) << "Failed to clear watch: " << watch.first;
+			}
+		}
+
+		mWatches.clear();
+	}
 }
 
 void XenStore::start()
