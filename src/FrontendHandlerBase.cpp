@@ -103,13 +103,11 @@ void FrontendHandlerBase::start()
 
 void FrontendHandlerBase::stop()
 {
+	lock_guard<mutex> lock(mMutex);
+
 	mXenStore.clearWatches();
 
 	mXenStore.stop();
-
-	mAsyncContext.stop();
-
-	lock_guard<mutex> lock(mMutex);
 
 	close(XenbusStateClosed);
 }
@@ -346,8 +344,7 @@ void FrontendHandlerBase::onError(const std::exception& e)
 {
 	LOG(mLog, ERROR) << Utils::logDomId(mFeDomId, mDevId) << e.what();
 
-	mAsyncContext.call([this] () { lock_guard<mutex> lock(mMutex);
-								   close(XenbusStateInitWait); });
+	close(XenbusStateClosed);
 }
 
 void FrontendHandlerBase::release()

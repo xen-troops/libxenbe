@@ -275,8 +275,6 @@ private:
 
 	std::mutex mMutex;
 
-	XenBackend::AsyncContext mAsyncContext;
-
 	Log mLog;
 
 	void release();
