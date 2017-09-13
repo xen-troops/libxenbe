@@ -204,7 +204,7 @@ void XenStore::setWatch(const string& path, WatchCallback callback)
 
 	LOG(mLog, DEBUG) << "Set watch: " << path;
 
-	if (!xs_watch(mXsHandle, path.c_str(), ""))
+	if (!xs_watch(mXsHandle, path.c_str(), path.c_str()))
 	{
 		throw XenStoreException("Can't set xs watch for " + path);
 	}
@@ -218,7 +218,10 @@ void XenStore::clearWatch(const string& path)
 
 	LOG(mLog, DEBUG) << "Clear watch: " << path;
 
-	xs_unwatch(mXsHandle, path.c_str(), "");
+	if (!xs_unwatch(mXsHandle, path.c_str(), path.c_str()))
+	{
+		LOG(mLog, ERROR) << "Failed to clear watch: " << path;
+	}
 
 	mWatches.erase(path);
 }
@@ -227,12 +230,20 @@ void XenStore::clearWatches()
 {
 	lock_guard<mutex> lock(mMutex);
 
-	for (auto watch : mWatches)
+	if (mWatches.size())
 	{
-		xs_unwatch(mXsHandle, watch.first.c_str(), "");
-	}
+		LOG(mLog, DEBUG) << "Clear watches";
 
-	mWatches.clear();
+		for (auto watch : mWatches)
+		{
+			if (!xs_unwatch(mXsHandle, watch.first.c_str(), watch.first.c_str()))
+			{
+				LOG(mLog, ERROR) << "Failed to clear watch: " << watch.first;
+			}
+		}
+
+		mWatches.clear();
+	}
 }
 
 void XenStore::start()
@@ -251,6 +262,11 @@ void XenStore::start()
 
 void XenStore::stop()
 {
+	if (!mStarted)
+	{
+		return;
+	}
+
 	DLOG(mLog, DEBUG) << "Stop";
 
 	if (mPollFd)
@@ -262,6 +278,8 @@ void XenStore::stop()
 	{
 		mThread.join();
 	}
+
+	mStarted = false;
 }
 
 /*******************************************************************************
@@ -292,15 +310,21 @@ void XenStore::release()
 	}
 }
 
-string XenStore::checkXsWatch()
+string XenStore::readXsWatch()
 {
 	string path;
+	unsigned int num;
 
-	auto result = xs_check_watch(mXsHandle);
+	auto result = xs_read_watch(mXsHandle, &num);
 
 	if (result)
 	{
 		path = result[XS_WATCH_PATH];
+
+		if (path != result[XS_WATCH_TOKEN])
+		{
+			path.clear();
+		}
 
 		free(result);
 	}
@@ -335,9 +359,9 @@ void XenStore::watchesThread()
 	{
 		while(mPollFd->poll())
 		{
-			string path;
+			auto path = readXsWatch();
 
-			while(!(path = checkXsWatch()).empty())
+			if (!path.empty())
 			{
 				LOG(mLog, DEBUG) << "Path triggered: " << path;
 
@@ -363,8 +387,6 @@ void XenStore::watchesThread()
 			LOG(mLog, ERROR) << e.what();
 		}
 	}
-
-	mStarted = false;
 }
 
 }

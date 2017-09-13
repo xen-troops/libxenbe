@@ -81,6 +81,11 @@ void XenEvtchn::start()
 
 void XenEvtchn::stop()
 {
+	if (!mStarted)
+	{
+		return;
+	}
+
 	DLOG(mLog, DEBUG) << "Stop event channel, port: " << mPort;
 
 	if (mPollFd)
@@ -92,6 +97,8 @@ void XenEvtchn::stop()
 	{
 		mThread.join();
 	}
+
+	mStarted = false;
 }
 
 void XenEvtchn::notify()
@@ -196,8 +203,6 @@ void XenEvtchn::eventThread()
 			LOG(mLog, ERROR) << e.what();
 		}
 	}
-
-	mStarted = false;
 }
 
 }

@@ -21,9 +21,14 @@
 #ifndef SRC_XEN_LOG_HPP_
 #define SRC_XEN_LOG_HPP_
 
+#include <algorithm>
+#include <chrono>
 #include <cstring>
+#include <iomanip>
+#include <iostream>
 #include <mutex>
 #include <sstream>
+#include <string>
 #include <vector>
 
 /***************************************************************************//**
@@ -143,18 +148,29 @@ public:
 	 * @param[in] fileAndLine displays source file name and line number instead
 	 *                        of module name
 	 */
-	Log(const std::string& name, LogLevel level = sCurrentLevel,
-		bool fileAndLine = sShowFileAndLine) :
+	Log(const std::string& name, LogLevel level = Log::getLogLevel(),
+		bool fileAndLine = Log::getShowFileAndLine()) :
 		mName(name),  mLevel(level), mFileAndLine(fileAndLine)
 	{
 		setLogLevelByMask();
 	}
 
 	/**
+	 * Gets current log level
+	 * @return current log level
+	 */
+	static LogLevel& getLogLevel()
+	{
+		static LogLevel sCurrentLevel = LogLevel::logINFO;
+
+		return sCurrentLevel;
+	}
+
+	/**
 	 * Sets log level
 	 * @param[in] level log level
 	 */
-	static void setLogLevel(LogLevel level) { sCurrentLevel = level; }
+	static void setLogLevel(LogLevel level) { getLogLevel() = level; }
 
 	/**
 	 * Sets log level
@@ -162,13 +178,22 @@ public:
 	 * "warning", "info", "debug</i>)
 	 * @return <i>true</i> if log level is set successfully
 	 */
-	static bool setLogLevel(const std::string& strLevel);
+	static bool setLogLevel(const std::string& strLevel)
+	{
+		return getLogLevelByString(strLevel, getLogLevel());
+	}
 
 	/**
-	 * Gets current log level
-	 * @return current log level
+	 * Gets weather to display the source file name and line or the module name
+	 * @return <i>true</i> if the source file name and line
+	 * is be displayed
 	 */
-	static LogLevel getLogLevel() { return sCurrentLevel; }
+	static bool& getShowFileAndLine()
+	{
+		static bool sShowFileAndLine = false;
+
+		return sShowFileAndLine;
+	}
 
 	/**
 	 * Sets weather to display the source file name and line or the module name
@@ -177,46 +202,188 @@ public:
 	 */
 	static void setShowFileAndLine(bool showFileAndLine)
 	{
-		sShowFileAndLine = showFileAndLine;
+		getShowFileAndLine() = showFileAndLine;
 	}
 
 	/**
-	 * Gets weather to display the source file name and line or the module name
-	 * @return <i>true</i> if the source file name and line
-	 * is be displayed
+	 * Gets current log mask
+	 * @return current log mask
 	 */
-	static bool getShowFileAndLine() { return sShowFileAndLine; }
+	static std::string& getLogMask()
+	{
+		static std::string sLogMask;
+
+		return sLogMask;
+	}
 
 	/**
 	 * Sets log mask
 	 * @param[in] mask log mask
 	 * @return <i>true</i> if log mask is set successfully
 	 */
-	static bool setLogMask(const std::string& mask);
+	static bool setLogMask(const std::string& mask)
+	{
+		getLogMask() = mask;
+
+		std::vector<std::string> items;
+
+		splitMask(items, ',');
+
+		std::vector<std::pair<std::string,
+							  LogLevel>>& logMaskItems = getLogMaskItems();
+
+		for(auto item : items)
+		{
+			size_t sepPos = 0;
+			LogLevel logLevel = LogLevel::logDEBUG;
+
+			sepPos = item.find(':');
+
+			if (sepPos == std::string::npos)
+			{
+				sepPos = item.length();
+			}
+			else
+			{
+				if (!getLogLevelByString(item.substr(sepPos + 1), logLevel))
+				{
+					logMaskItems.clear();
+
+					return false;
+				}
+			}
+
+			logMaskItems.push_back(make_pair(item.substr(0, sepPos),
+								   logLevel));
+		}
+
+		return true;
+	}
 
 	/**
-	 * Gets current log mask
-	 * @return current log mask
+	 * Sets file to write log
+	 * @param[in] fileName file name
 	 */
-	static std::string getLogMask() { return sLogMask; }
+	static void setStreamBuffer(std::streambuf* streamBuffer)
+	{
+		getOutputStream().rdbuf(streamBuffer);
+	}
 
 private:
 
 	friend class LogLine;
 
-	static LogLevel sCurrentLevel;
-	static bool sShowFileAndLine;
-	static std::string sLogMask;
-	static std::vector<std::pair<std::string, LogLevel>> sLogMaskItems;
-
 	std::string mName;
 	LogLevel mLevel;
 	bool mFileAndLine;
 
-	void setLogLevelByMask();
-	static void splitMask(std::vector<std::string>& splitVector, char delim);
+	static std::vector<std::pair<std::string, LogLevel>>& getLogMaskItems()
+	{
+		static std::vector<std::pair<std::string, LogLevel>> sMaskItems;
+
+		return sMaskItems;
+	}
+
+	static std::ostream& getOutputStream()
+	{
+		static std::ostream sOutput(std::cout.rdbuf());
+
+		return sOutput;
+	}
+
+	void setLogLevelByMask()
+	{
+		for(auto item : getLogMaskItems())
+		{
+			if (item.first.back() == '*')
+			{
+				item.first.pop_back();
+
+				if (mName.compare(0, item.first.length(), item.first) == 0)
+				{
+					mLevel = item.second;
+				}
+			}
+			else
+			{
+				if (item.first == mName)
+				{
+					mLevel = item.second;
+				}
+			}
+		}
+	}
+
+	static void splitMask(std::vector<std::string>& splitVector, char delim)
+	{
+		size_t curPos = 0;
+		size_t delimPos = 0;
+
+		splitVector.clear();
+
+		auto logMask = getLogMask();
+
+		if (logMask.empty())
+		{
+			return;
+		}
+
+		do
+		{
+			delimPos = logMask.find(delim, curPos);
+
+			if (delimPos != std::string::npos)
+			{
+				splitVector.push_back(logMask.substr(curPos,
+													 delimPos - curPos));
+
+				curPos = ++delimPos;
+
+				if (delimPos == logMask.length())
+				{
+					delimPos = std::string::npos;
+				}
+			}
+			else
+			{
+				splitVector.push_back(logMask.substr(curPos,
+													 logMask.length() -
+													 curPos));
+			}
+		}
+		while (delimPos != std::string::npos);
+	}
+
 	static bool getLogLevelByString(const std::string& strLevel,
-									LogLevel& level);
+									LogLevel& level)
+	{
+		static const char* strLevelArray[] =
+		{
+			"DISABLE",
+			"ERROR",
+			"WARNING",
+			"INFO",
+			"DEBUG"
+		};
+
+		std::string strLevelUp = strLevel;
+
+		std::transform(strLevelUp.begin(), strLevelUp.end(), strLevelUp.begin(),
+					   (int (*)(int))std::toupper);
+
+		for(auto i = 0; i <= static_cast<int>(LogLevel::logDEBUG); i++)
+		{
+			if (std::string(strLevelArray[i]).compare(0, strLevelUp.length(),
+												 	  strLevelUp) == 0)
+			{
+				level = static_cast<LogLevel>(i);
+
+				return true;
+			}
+		}
+
+		return false;
+	}
 };
 
 /// @cond HIDDEN_SYMBOLS
@@ -224,26 +391,101 @@ class LogLine
 {
 public:
 
-	virtual ~LogLine();
+	virtual ~LogLine()
+	{
+		static std::mutex sMutex;
+
+		if (mCurrentLevel <= mSetLevel && mSetLevel > LogLevel::logDISABLE)
+		{
+			mStream << std::endl;
+
+			std::lock_guard<std::mutex> lock(sMutex);
+
+			Log::getOutputStream() << mStream.str();
+		}
+	}
 
 	std::ostringstream& get(const Log& log, const char* file, int line,
-							LogLevel level = LogLevel::logDEBUG);
+							LogLevel level = LogLevel::logDEBUG)
+	{
+		mCurrentLevel = level;
+		mSetLevel = log.mLevel;
+
+		if (log.mFileAndLine)
+		{
+			putHeader(std::string(file) + " " + std::to_string(line));
+		}
+		else
+		{
+			putHeader(log.mName);
+		}
+
+		return mStream;
+	}
+
 	std::ostringstream& get(const char* name, const char* file, int line,
-							LogLevel level = LogLevel::logDEBUG);
+							LogLevel level = LogLevel::logDEBUG)
+	{
+		mCurrentLevel = level;
+		mSetLevel = Log::getLogLevel();
+
+		if (name)
+		{
+			putHeader(name);
+		}
+		else
+		{
+			putHeader(std::string(file) + " " + std::to_string(line));
+		}
+
+		return mStream;
+	}
 
 private:
-
-	static size_t sAlignmentLength;
 
 	std::ostringstream mStream;
 	LogLevel mCurrentLevel;
 	LogLevel mSetLevel;
 
-	static std::mutex mMutex;
+	void putHeader(const std::string& header)
+	{
+		static size_t sAlignmentLength;
 
-	void putHeader(const std::string& header);
-	std::string nowTime();
-	std::string levelToString(LogLevel level);
+		if (mCurrentLevel <= mSetLevel && mSetLevel > LogLevel::logDISABLE)
+		{
+			if (header.length() > sAlignmentLength)
+			{
+				sAlignmentLength = header.length();
+			}
+
+			mStream << nowTime()
+					<< " | " << header << " "
+					<< std::string(sAlignmentLength - header.length(), ' ')
+					<< "| " << levelToString(mCurrentLevel) << " - ";
+		}
+	}
+
+	std::string nowTime()
+	{
+		auto now = std::chrono::system_clock::now();
+		auto time = std::chrono::system_clock::to_time_t(now);
+		auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+					  now.time_since_epoch()) % 1000;
+
+		std::stringstream ss;
+
+		ss << std::put_time(localtime(&time), "%d.%m.%y %X.")
+		   << std::setfill('0') << std::setw(3) << ms.count();
+
+		return ss.str();
+	}
+
+	std::string levelToString(LogLevel level)
+	{
+		static const char* buffer[] = {"", "ERR", "WRN", "INF", "DBG"};
+
+		return buffer[static_cast<int>(level)];
+	}
 };
 /// @endcond
 
