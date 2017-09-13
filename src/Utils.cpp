@@ -27,7 +27,11 @@
 
 #include "Version.hpp"
 
+using std::chrono::milliseconds;
+using std::cv_status;
 using std::exception;
+using std::function;
+using std::lock_guard;
 using std::mutex;
 using std::string;
 using std::thread;
@@ -222,6 +226,76 @@ void AsyncContext::run()
 			mAsyncCalls.pop_front();
 		}
 	}
+}
+
+/*******************************************************************************
+ * Timer
+ ******************************************************************************/
+
+Timer::Timer(function<void()> callback, milliseconds time, bool periodic) :
+	mCallback(callback),
+	mTime(time),
+	mPeriodic(periodic),
+	mTerminate(true)
+{
+}
+
+Timer::~Timer()
+{
+	stop();
+}
+
+void Timer::start()
+{
+	lock_guard<mutex> lock(mItfMutex);
+
+	if (mTerminate)
+	{
+		mTerminate = false;
+
+		mThread = thread(&Timer::run, this);
+	}
+	else
+	{
+		throw XenException("Timer is already started");
+	}
+}
+
+void Timer::stop()
+{
+	lock_guard<mutex> lock(mItfMutex);
+
+	if (mPeriodic)
+	{
+		unique_lock<mutex> lock(mMutex);
+
+		mTerminate = true;
+
+		mCondVar.notify_all();
+	}
+
+	if (mThread.joinable())
+	{
+		mThread.join();
+	}
+}
+
+void Timer::run()
+{
+	do
+	{
+		unique_lock<mutex> lock(mMutex);
+
+		if (!mCondVar.wait_for(lock, mTime, [this]
+							   { return static_cast<bool>(mTerminate); }))
+		{
+			if (mCallback)
+			{
+				mCallback();
+			}
+		}
+	}
+	while(!mTerminate && mPeriodic);
 }
 
 }

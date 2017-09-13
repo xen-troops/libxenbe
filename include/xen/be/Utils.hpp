@@ -131,9 +131,6 @@ class AsyncContext
 {
 public:
 
-	/**
-	 * Callback which is called when the event channel is notified
-	 */
 	typedef std::function<void()> AsyncCall;
 
 	AsyncContext();
@@ -146,7 +143,7 @@ public:
 
 	/**
 	 * Adds a function to be called asynchronously
-	 * @param f
+	 * @param f callback
 	 */
 	void call(AsyncCall f);
 
@@ -158,6 +155,48 @@ private:
 	std::thread mThread;
 
 	std::list<AsyncCall> mAsyncCalls;
+
+	void run();
+};
+
+/***************************************************************************//**
+ * Implements timer
+ *
+ * This class allows to call event in scheduled time or periodically
+ *
+ * @ingroup backend
+ ******************************************************************************/
+class Timer
+{
+public:
+
+	typedef std::function<void()> Callback;
+
+	Timer(Callback callback, std::chrono::milliseconds time,
+		  bool periodic = false);
+	~Timer();
+
+	/**
+	 * Starts timer
+	 */
+	void start();
+
+	/**
+	 * Stops timer
+	 */
+	void stop();
+
+private:
+
+	Callback mCallback;
+	std::chrono::milliseconds mTime;
+	bool mPeriodic;
+
+	std::atomic_bool mTerminate;
+	std::thread mThread;
+	std::mutex mMutex;
+	std::mutex mItfMutex;
+	std::condition_variable mCondVar;
 
 	void run();
 };
