@@ -135,6 +135,11 @@ public:
 	~AsyncContext();
 
 	/**
+	 * Stops async thread
+	 */
+	void stop();
+
+	/**
 	 * Adds a function to be called asynchronously
 	 * @param f
 	 */

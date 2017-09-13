@@ -12,7 +12,6 @@ set(SOURCES
 	BackendBase.cpp
 	FrontendHandlerBase.cpp
 	RingBufferBase.cpp
-	Log.cpp
 	Utils.cpp
 	XenCtrl.cpp
 	XenEvtchn.cpp

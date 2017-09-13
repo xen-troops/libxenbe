@@ -172,6 +172,11 @@ AsyncContext::AsyncContext() :
 
 AsyncContext::~AsyncContext()
 {
+	stop();
+}
+
+void AsyncContext::stop()
+{
 	{
 		unique_lock<mutex> lock(mMutex);
 
