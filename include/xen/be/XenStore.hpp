@@ -186,7 +186,7 @@ private:
 	void release();
 
 	void watchesThread();
-	std::string checkXsWatch();
+	std::string readXsWatch();
 	WatchCallback getWatchCallback(std::string& path);
 };
 
