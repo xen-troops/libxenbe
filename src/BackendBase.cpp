@@ -114,7 +114,7 @@ void BackendBase::start()
 	mXenStore.start();
 
 	mXenStore.setWatch(mFrontendsPath,
-					   bind(&BackendBase::frontendListChanged, this, _1));
+					   bind(&BackendBase::domainListChanged, this, _1));
 }
 
 void BackendBase::stop()
@@ -154,37 +154,56 @@ void BackendBase::addFrontendHandler(FrontendHandlerPtr frontendHandler)
  * Private
  ******************************************************************************/
 
-void BackendBase::frontendListChanged(const string& path)
+void BackendBase::domainListChanged(const string& path)
 {
-	for (auto frontend : mXenStore.readDirectory(path))
+	for (auto domain : mXenStore.readDirectory(path))
 	{
-		domid_t domId = stoi(frontend);
+		domid_t domId = stoi(domain);
 
-		auto tmpPath = path + "/" + frontend;
-
-		for (auto device : mXenStore.readDirectory(tmpPath))
+		if (find(mDomainList.begin(), mDomainList.end(), domId) ==
+			mDomainList.end())
 		{
-			uint16_t devId = stoi(device);
+			mXenStore.setWatch(mFrontendsPath + "/" + domain,
+							   bind(&BackendBase::deviceListChanged, this,
+									_1, domId));
 
-			tmpPath += "/" + device;
+			mDomainList.push_back(domId);
+		}
+	}
+}
 
-			if (mXenStore.checkIfExist(tmpPath))
+void BackendBase::deviceListChanged(const string& path, domid_t domId)
+{
+	if (!mXenStore.checkIfExist(path))
+	{
+		auto it = find(mDomainList.begin(), mDomainList.end(), domId);
+
+		if (it != mDomainList.end())
+		{
+			mXenStore.clearWatch(path);
+			mDomainList.erase(it);
+		}
+
+		return;
+	}
+
+	for (auto device : mXenStore.readDirectory(path))
+	{
+		uint16_t devId = stoi(device);
+
+		try
+		{
+			if (!getFrontendHandler(domId, devId))
 			{
-				try
-				{
-					if (!getFrontendHandler(domId, devId))
-					{
-						LOG(mLog, DEBUG) << "New frontend found, domid: "
-										 << domId << ", devid: " << devId;
+				LOG(mLog, DEBUG) << "New frontend found, domid: "
+						<< domId << ", devid: " << devId;
 
-						onNewFrontend(domId, devId);
-					}
-				}
-				catch(const exception& e)
-				{
-					LOG(mLog, ERROR) << e.what();
-				}
+				onNewFrontend(domId, devId);
 			}
+		}
+		catch(const exception& e)
+		{
+			LOG(mLog, ERROR) << e.what();
 		}
 	}
 }
