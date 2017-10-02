@@ -103,11 +103,11 @@ void FrontendHandlerBase::start()
 
 void FrontendHandlerBase::stop()
 {
-	lock_guard<mutex> lock(mMutex);
-
 	mXenStore.clearWatches();
 
 	mXenStore.stop();
+
+	lock_guard<mutex> lock(mMutex);
 
 	close(XenbusStateClosed);
 }
@@ -131,7 +131,7 @@ void FrontendHandlerBase::addRingBuffer(RingBufferPtr ringBuffer)
 
 void FrontendHandlerBase::setBackendState(xenbus_state state)
 {
-	if (state == mBackendState || !mXenStore.checkIfExist(mBeStatePath))
+	if (state == mBackendState)
 	{
 		return;
 	}
@@ -144,7 +144,10 @@ void FrontendHandlerBase::setBackendState(xenbus_state state)
 
 	mBackendState = state;
 
-	mXenStore.writeInt(path, state);
+	if (mXenStore.checkIfExist(mBeStatePath))
+	{
+		mXenStore.writeInt(path, state);
+	}
 }
 
 void FrontendHandlerBase::onStateUnknown()
