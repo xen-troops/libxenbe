@@ -310,7 +310,7 @@ void XenStore::release()
 	}
 }
 
-string XenStore::readXsWatch()
+string XenStore::readXsWatch(string& token)
 {
 	string path;
 	unsigned int num;
@@ -320,11 +320,7 @@ string XenStore::readXsWatch()
 	if (result)
 	{
 		path = result[XS_WATCH_PATH];
-
-		if (path != result[XS_WATCH_TOKEN])
-		{
-			path.clear();
-		}
+		token = result[XS_WATCH_TOKEN];
 
 		free(result);
 	}
@@ -332,7 +328,7 @@ string XenStore::readXsWatch()
 	return path;
 }
 
-XenStore::WatchCallback XenStore::getWatchCallback(string& path)
+XenStore::WatchCallback XenStore::getWatchCallback(const string& path)
 {
 	lock_guard<mutex> lock(mMutex);
 
@@ -359,19 +355,19 @@ void XenStore::watchesThread()
 	{
 		while(mPollFd->poll())
 		{
-			auto path = readXsWatch();
+			string token;
 
-			if (!path.empty())
+			auto path = readXsWatch(token);
+
+			if (!token.empty())
 			{
-				LOG(mLog, DEBUG) << "Path triggered: " << path;
-
-				auto callback = getWatchCallback(path);
+				auto callback = getWatchCallback(token);
 
 				if (callback)
 				{
-					LOG(mLog, DEBUG) << "Watch triggered: " << path;
+					LOG(mLog, DEBUG) << "Watch triggered: " << token;
 
-					callback(path);
+					callback(token);
 				}
 			}
 		}
