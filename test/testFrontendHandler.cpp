@@ -64,6 +64,8 @@ void TestFrontendHandler::prepareXenStore(const string& domName,
 
 	XenStoreMock storeMock;
 
+	storeMock.writeValue("domid", to_string(gDomId));
+
 	string feDomPath = "/local/domain/" + to_string(feDomId);
 	string beDomPath = "/local/domain/" + to_string(beDomId);
 

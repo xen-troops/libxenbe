@@ -205,6 +205,36 @@ bool xs_unwatch(xs_handle* h, const char* path, const char* token)
 	return h->mock->unwatch(path);
 }
 
+char **xs_read_watch(struct xs_handle *h, unsigned int *num)
+{
+	if (XenStoreMock::getErrorMode())
+	{
+		return nullptr;
+	}
+
+	char** value = nullptr;
+	string path;
+
+	while (h->mock->getChangedEntry(path))
+	{
+		size_t totalLength = 2 * sizeof(char*) + 2 * (path.length() + 1);
+
+		value = static_cast<char**>(malloc(totalLength));
+		char* pos = reinterpret_cast<char*>(&value[2]);
+
+		value[0] = pos;
+
+		strcpy(value[0], path.c_str());
+
+		value[1] = pos + path.length() + 1;
+
+		strcpy(value[1], path.c_str());
+	}
+
+	return value;
+
+}
+
 char** xs_check_watch(xs_handle* h)
 {
 	if (XenStoreMock::getErrorMode())

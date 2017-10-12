@@ -191,7 +191,7 @@ protected:
 	 * The client should override this method and free data channels when it
 	 * is invoked.
 	 */
-	virtual void onClosing() = 0;
+	virtual void onClosing();
 
 
 	/**
@@ -274,6 +274,8 @@ private:
 	std::vector<RingBufferPtr> mRingBuffers;
 
 	std::mutex mMutex;
+
+	AsyncContext mAsyncContext;
 
 	Log mLog;
 
