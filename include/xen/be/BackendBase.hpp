@@ -95,8 +95,7 @@ public:
 	 * @param[in] deviceName device name
 	 * @param[in] domId      domain id
 	 */
-	BackendBase(const std::string& name, const std::string& deviceName,
-				domid_t domId);
+	BackendBase(const std::string& name, const std::string& deviceName);
 	virtual ~BackendBase();
 
 	/**

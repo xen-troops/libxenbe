@@ -76,13 +76,13 @@ namespace XenBackend {
  * BackendBase
  ******************************************************************************/
 
-BackendBase::BackendBase(const string& name, const string& deviceName,
-						 domid_t domId) :
-	mDomId(domId),
+BackendBase::BackendBase(const string& name, const string& deviceName) :
+	mDomId(0),
 	mDeviceName(deviceName),
 	mXenStore(bind(&BackendBase::onError, this, _1)),
 	mLog(name.empty() ? "Backend" : name)
 {
+	mDomId = mXenStore.readInt("domid");
 
 	mFrontendsPath = mXenStore.getDomainPath(mDomId) + "/backend/" +
 					 mDeviceName;
