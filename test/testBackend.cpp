@@ -83,7 +83,7 @@ TEST_CASE("BackendHandler", "[backendhandler]")
 										 gDomId, gFrontDomId,
 										 gFrontDevId);
 
-	TestBackend testBackend(gDevName, gDomId);
+	TestBackend testBackend(gDevName);
 
 	gNewFrontend = false;
 	gNewFrontDomId = 0;
