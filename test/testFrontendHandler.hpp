@@ -33,8 +33,7 @@ public:
 										beDomId, feDomId, devId)
 	{}
 
-	static void prepareXenStore(const std::string& domName,
-								const std::string& devName,
+	static void prepareXenStore(const std::string& devName,
 								domid_t beDomId, domid_t feDomId,
 								uint16_t devId);
 
