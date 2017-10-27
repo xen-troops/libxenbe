@@ -143,6 +143,11 @@ public:
 	uint16_t getDevId() const {  return mDevId; }
 
 	/**
+	 * Returns domain name
+	 */
+	std::string getDomName() const {  return mDomName; }
+
+	/**
 	 * Returns frontend xen store base path
 	 */
 	std::string getXsFrontendPath() const { return mXsFrontendPath; }
@@ -254,6 +259,7 @@ private:
 	domid_t mFeDomId;
 	uint16_t mDevId;
 	std::string mDevName;
+	std::string mDomName;
 	std::string mBeStatePath;
 	std::string mFeStatePath;
 

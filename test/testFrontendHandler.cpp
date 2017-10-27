@@ -49,13 +49,15 @@ static condition_variable gCondVar;
 
 static domid_t gDomId = 3;
 static uint16_t gDevId = 4;
+static const char* gDomName = "DomU";
 static const char* gDevName = "test_device";
 
 static XenbusState gBeState = XenbusStateUnknown;
 static bool gOnBind = false;
 static std::list<XenbusState> gBeStates;
 
-void TestFrontendHandler::prepareXenStore(const string& devName,
+void TestFrontendHandler::prepareXenStore(const string& domName,
+										  const string& devName,
 										  domid_t beDomId, domid_t feDomId,
 										  uint16_t devId)
 {
@@ -69,6 +71,8 @@ void TestFrontendHandler::prepareXenStore(const string& devName,
 
 	storeMock.setDomainPath(feDomId, feDomPath);
 	storeMock.setDomainPath(beDomId, beDomPath);
+
+	storeMock.writeValue(feDomPath + "/name", domName);
 
 	string fePath = feDomPath + "/device/" + devName + "/" + to_string(devId);
 	string bePath = beDomPath + "/backend/" + devName + "/" +
@@ -123,7 +127,8 @@ TEST_CASE("FrontendHandler", "[frontendhandler]")
 	XenGnttabMock::setErrorMode(false);
 	XenStoreMock::setErrorMode(false);
 
-	TestFrontendHandler::prepareXenStore(gDevName, 0, gDomId, gDevId);
+	TestFrontendHandler::prepareXenStore(gDomName, gDevName, 0,
+										 gDomId, gDevId);
 
 	gBeStates.clear();
 	gOnBind = false;
@@ -148,6 +153,7 @@ TEST_CASE("FrontendHandler", "[frontendhandler]")
 	{
 		REQUIRE(frontendHandler.getDomId() == gDomId);
 		REQUIRE(frontendHandler.getDevId() == gDevId);
+		REQUIRE(frontendHandler.getDomName() == gDomName);
 		REQUIRE_FALSE(frontendHandler.getBackendState() > XenbusStateConnected);
 
 		frontendHandler.stop();
