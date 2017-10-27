@@ -79,7 +79,7 @@ TEST_CASE("BackendHandler", "[backendhandler]")
 	XenGnttabMock::setErrorMode(false);
 	XenStoreMock::setErrorMode(false);
 
-	TestFrontendHandler::prepareXenStore("DomU", gDevName,
+	TestFrontendHandler::prepareXenStore(gDevName,
 										 gDomId, gFrontDomId,
 										 gFrontDevId);
 
