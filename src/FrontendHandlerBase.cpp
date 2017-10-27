@@ -69,6 +69,9 @@ FrontendHandlerBase::FrontendHandlerBase(const string& name,
 					 << "Create frontend handler";
 
 	initXenStorePathes();
+
+	mDomName = mXenStore.readString(mXenStore.getDomainPath(mFeDomId) +
+									"/name");
 }
 
 FrontendHandlerBase::~FrontendHandlerBase()
