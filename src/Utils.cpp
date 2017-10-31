@@ -25,6 +25,8 @@
 
 #include "XenException.hpp"
 
+#include "Version.hpp"
+
 using std::exception;
 using std::mutex;
 using std::string;
@@ -60,6 +62,11 @@ string Utils::logState(xenbus_state state)
 	{
 		return "[" + strStates[state] + "]";
 	}
+}
+
+string Utils::getVersion()
+{
+	return VERSION;
 }
 
 /*******************************************************************************

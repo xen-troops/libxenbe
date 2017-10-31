@@ -59,6 +59,11 @@ public:
 	 * @return string representation of xen domain state
 	 */
 	static std::string logState(xenbus_state state);
+
+	/**
+	 * Returns lib xenbe version
+	 */
+	static std::string getVersion();
 };
 
 /***************************************************************************//**
