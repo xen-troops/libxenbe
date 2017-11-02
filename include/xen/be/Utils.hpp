@@ -162,6 +162,51 @@ private:
 	void run();
 };
 
+/***************************************************************************//**
+ * Implements timer
+ *
+ * This class allows to call event in scheduled time or periodic
+ *
+ * @ingroup backend
+ ******************************************************************************/
+class Timer
+{
+public:
+
+	/**
+	 * Callback which is called when the event channel is notified
+	 */
+	typedef std::function<void()> AsyncCall;
+
+	Timer(std::function<void()> callback, std::chrono::milliseconds time,
+		  bool periodic = false);
+	~Timer();
+
+	/**
+	 * Starts timer
+	 */
+	void start();
+
+	/**
+	 * Stops timer
+	 */
+	void stop();
+
+private:
+
+	std::function<void()> mCallback;
+	std::chrono::milliseconds mTime;
+	bool mPeriodic;
+
+	std::atomic_bool mTerminate;
+	std::thread mThread;
+	std::mutex mMutex;
+	std::mutex mItfMutex;
+	std::condition_variable mCondVar;
+
+	void run();
+};
+
 }
 
 #endif /* SRC_XEN_UTILS_HPP_ */
