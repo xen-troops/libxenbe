@@ -29,6 +29,10 @@ extern "C" {
 
 #include "XenException.hpp"
 
+using std::lock_guard;
+using std::mutex;
+using std::unordered_map;
+
 using XenBackend::XenException;
 
 /*******************************************************************************
@@ -101,14 +105,10 @@ int xengnttab_unmap(xengnttab_handle* xgt, void* start_address, uint32_t count)
  * XenGnttabMock
  ******************************************************************************/
 
-XenGnttabMock* XenGnttabMock::sLastInstance = nullptr;
-bool XenGnttabMock::mErrorMode = false;
-
-XenGnttabMock::XenGnttabMock() :
-	mLastMappedAddress(nullptr)
-{
-	sLastInstance = this;
-}
+mutex XenGnttabMock::sMutex;
+void* XenGnttabMock::sLastMappedAddress = nullptr;
+unordered_map<void*, XenGnttabMock::MapBuffer> XenGnttabMock::sMapBuffers;
+bool XenGnttabMock::sErrorMode = false;
 
 /*******************************************************************************
  * Public
@@ -117,22 +117,26 @@ XenGnttabMock::XenGnttabMock() :
 void* XenGnttabMock::mapGrantRefs(uint32_t count, uint32_t domId,
 								  uint32_t *refs)
 {
+	lock_guard<mutex> lock(sMutex);
+
 	MapBuffer buffer = { count, domId, count * XC_PAGE_SIZE };
 
-	void* address = malloc(buffer.size);
+	void* address = calloc(1, buffer.size);
 
-	mMapBuffers[address] = buffer;
+	sMapBuffers[address] = buffer;
 
-	mLastMappedAddress = address;
+	sLastMappedAddress = address;
 
 	return address;
 }
 
 void XenGnttabMock::unmapGrantRefs(void* address, uint32_t count)
 {
-	auto it = mMapBuffers.find(address);
+	lock_guard<mutex> lock(sMutex);
 
-	if (it == mMapBuffers.end())
+	auto it = sMapBuffers.find(address);
+
+	if (it == sMapBuffers.end())
 	{
 		throw XenException("Buffer not found");
 	}
@@ -144,14 +148,16 @@ void XenGnttabMock::unmapGrantRefs(void* address, uint32_t count)
 
 	free(it->first);
 
-	mMapBuffers.erase(it);
+	sMapBuffers.erase(it);
 }
 
 size_t XenGnttabMock::getMapBufferSize(void* address)
 {
-	auto it = mMapBuffers.find(address);
+	lock_guard<mutex> lock(sMutex);
 
-	if (it == mMapBuffers.end())
+	auto it = sMapBuffers.find(address);
+
+	if (it == sMapBuffers.end())
 	{
 		throw XenException("Buffer not found");
 	}
@@ -161,5 +167,7 @@ size_t XenGnttabMock::getMapBufferSize(void* address)
 
 size_t XenGnttabMock::checkMapBuffers()
 {
-	return mMapBuffers.size();
+	lock_guard<mutex> lock(sMutex);
+
+	return sMapBuffers.size();
 }

@@ -25,6 +25,9 @@
 #include <cstdlib>
 
 using std::find_if;
+using std::list;
+using std::lock_guard;
+using std::mutex;
 
 /*******************************************************************************
  * Xen interface
@@ -82,13 +85,9 @@ int xc_domain_getinfolist(xc_interface* xch,
  * XenCtrlMock
  ******************************************************************************/
 
-XenCtrlMock* XenCtrlMock::sLastInstance = nullptr;
-bool XenCtrlMock::mErrorMode = false;
-
-XenCtrlMock::XenCtrlMock()
-{
-	sLastInstance = this;
-}
+mutex XenCtrlMock::sMutex;
+bool XenCtrlMock::sErrorMode = false;
+list<xc_domaininfo_t> XenCtrlMock::sDomInfos;
 
 /*******************************************************************************
  * Public
@@ -96,33 +95,37 @@ XenCtrlMock::XenCtrlMock()
 
 void XenCtrlMock::addDomInfo(const xc_domaininfo_t& info)
 {
-	auto it = find_if(mDomInfos.begin(), mDomInfos.end(),
+	lock_guard<mutex> lock(sMutex);
+
+	auto it = find_if(sDomInfos.begin(), sDomInfos.end(),
 					 [&info](const xc_domaininfo_t& item)
 					 { return item.domain == info.domain; });
 
-	if (it != mDomInfos.end())
+	if (it != sDomInfos.end())
 	{
 		*it = info;
 	}
 
-	mDomInfos.push_back(info);
+	sDomInfos.push_back(info);
 }
 
 int XenCtrlMock::getDomInfos(domid_t firstDom, unsigned int maxDoms,
 							 xc_domaininfo_t* info)
 {
+	lock_guard<mutex> lock(sMutex);
+
 	unsigned int count = 0;
 
-	auto it = find_if(mDomInfos.begin(), mDomInfos.end(),
+	auto it = find_if(sDomInfos.begin(), sDomInfos.end(),
 					 [&firstDom](const xc_domaininfo_t& item)
 					 { return item.domain == firstDom; });
 
-	if (it == mDomInfos.end())
+	if (it == sDomInfos.end())
 	{
-		it = mDomInfos.begin();
+		it = sDomInfos.begin();
 	}
 
-	for(; it != mDomInfos.end(); it++)
+	for(; it != sDomInfos.end(); it++)
 	{
 		info[count++] = *it;
 

@@ -31,8 +31,6 @@ TEST_CASE("XenStat", "[xenctrl]")
 
 	XenCtrlMock::setErrorMode(false);
 
-	auto mock = XenCtrlMock::getLastInstance();
-
 	xc_domaininfo_t info = {};
 
 	domid_t domIds[] = { 1, 2, 3, 4, 5, 6, 7, 8 };
@@ -46,7 +44,7 @@ TEST_CASE("XenStat", "[xenctrl]")
 			info.flags = XEN_DOMINF_running;
 		}
 
-		mock->addDomInfo(info);
+		XenCtrlMock::addDomInfo(info);
 	}
 
 	SECTION("Check getters")

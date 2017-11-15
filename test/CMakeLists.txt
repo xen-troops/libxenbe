@@ -10,12 +10,15 @@ include_directories( . )
 # Sources
 ################################################################################
 
-set(SOURCES
+set(MOCK_SOURCES
 	mocks/Pipe.cpp
 	mocks/XenCtrlMock.cpp
 	mocks/XenEvtchnMock.cpp
 	mocks/XenGnttabMock.cpp
 	mocks/XenStoreMock.cpp
+)
+
+set(TEST_SOURCES
 	testBackend.cpp
 	testFrontendHandler.cpp
 	testRingBuffer.cpp
@@ -29,8 +32,11 @@ set(SOURCES
 # Targets
 ################################################################################
 
-add_executable(unitTests ${SOURCES})
+add_library(xenmock STATIC ${MOCK_SOURCES})
 
+add_executable(unitTests ${TEST_SOURCES})
+
+target_link_libraries(unitTests xenmock)
 
 ################################################################################
 # Libraries

@@ -222,7 +222,15 @@ void AsyncContext::run()
 
 		while(!mAsyncCalls.empty())
 		{
-			mAsyncCalls.front()();
+
+			auto asyncCall = mAsyncCalls.front();
+
+			lock.unlock();
+
+			asyncCall();
+
+			lock.lock();
+
 			mAsyncCalls.pop_front();
 		}
 	}

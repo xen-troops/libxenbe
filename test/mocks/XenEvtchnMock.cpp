@@ -142,23 +142,47 @@ xenevtchn_port_or_error_t xenevtchn_pending(xenevtchn_handle* xce)
  * XenEvtchnMock
  ******************************************************************************/
 
-XenEvtchnMock* XenEvtchnMock::sLastInstance = nullptr;
+mutex XenEvtchnMock::sMutex;
+list<XenEvtchnMock*> XenEvtchnMock::sClients;
 evtchn_port_t XenEvtchnMock::sPort = 0;
-bool XenEvtchnMock::mErrorMode = false;
+bool XenEvtchnMock::sErrorMode = false;
+int XenEvtchnMock::sLastNotifiedPort = -1;
+int XenEvtchnMock::sLastBoundPort = -1;
 
-XenEvtchnMock::XenEvtchnMock() :
-	mLastNotifiedPort(-1),
-	mLastBoundPort(-1)
+XenEvtchnMock::XenEvtchnMock()
 {
-	sLastInstance = this;
+	sClients.push_back(this);
+}
+
+XenEvtchnMock::~XenEvtchnMock()
+{
+	sClients.remove(this);
 }
 
 /*******************************************************************************
  * Public
  ******************************************************************************/
 
+void XenEvtchnMock::signalPort(evtchn_port_t port)
+{
+	lock_guard<mutex> lock(sMutex);
+
+	auto client = getClientByPort(port);
+
+	client->mSignaledPorts.push_back(port);
+
+	client->mPipe.write();
+}
+
+void XenEvtchnMock::setNotifyCbk(evtchn_port_t port, NotifyCbk cbk)
+{
+	getClientByPort(port)->mNotifyCbk = cbk;
+}
+
 evtchn_port_t XenEvtchnMock::bind(domid_t domId, evtchn_port_t remotePort)
 {
+	lock_guard<mutex> lock(sMutex);
+
 	auto it = find_if(mBoundPorts.begin(), mBoundPorts.end(),
 					  [&remotePort, &domId](const BoundPort& boundPort)
 					  { return (boundPort.remotePort == remotePort) &&
@@ -173,21 +197,30 @@ evtchn_port_t XenEvtchnMock::bind(domid_t domId, evtchn_port_t remotePort)
 
 	mBoundPorts.push_back(boundPort);
 
-	mLastBoundPort = boundPort.localPort;
+	sLastBoundPort = boundPort.localPort;
 
 	return boundPort.localPort;
 }
 
 void XenEvtchnMock::unbind(evtchn_port_t port)
 {
-	mBoundPorts.erase(getBoundPort(port));
+	lock_guard<mutex> lock(sMutex);
+
+	auto it = getBoundPort(port);
+
+	if (it == mBoundPorts.end())
+	{
+		throw XenException("Port not bound");
+	}
+
+	mBoundPorts.erase(it);
 }
 
 void XenEvtchnMock::notifyPort(evtchn_port_t port)
 {
-	getBoundPort(port);
+	lock_guard<mutex> lock(sMutex);
 
-	mLastNotifiedPort = port;
+	sLastNotifiedPort = port;
 
 	if (mNotifyCbk)
 	{
@@ -195,26 +228,8 @@ void XenEvtchnMock::notifyPort(evtchn_port_t port)
 	}
 }
 
-void XenEvtchnMock::signalPort(evtchn_port_t port)
-{
-	lock_guard<mutex> lock(mMutex);
-
-	getBoundPort(port);
-
-	mSignaledPorts.push_back(port);
-
-	mPipe.write();
-}
-
-void XenEvtchnMock::signalLastBoundPort()
-{
-	signalPort(mLastBoundPort);
-}
-
 evtchn_port_t XenEvtchnMock::getPendingPort()
 {
-	lock_guard<mutex> lock(mMutex);
-
 	if (mSignaledPorts.size() == 0)
 	{
 		throw XenException("No pending ports");
@@ -229,26 +244,27 @@ evtchn_port_t XenEvtchnMock::getPendingPort()
 	return port;
 }
 
-void XenEvtchnMock::setNotifyCbk(NotifyCbk cbk)
-{
-	mNotifyCbk = cbk;
-}
-
 /*******************************************************************************
  * Private
+
  ******************************************************************************/
+XenEvtchnMock* XenEvtchnMock::getClientByPort(evtchn_port_t port)
+{
+	for(auto client : sClients)
+	{
+		if (client->getBoundPort(port) != client->mBoundPorts.end())
+		{
+			return client;
+		}
+	}
+
+	throw XenException("Port not bound");
+}
 
 list<XenEvtchnMock::BoundPort>::iterator
 XenEvtchnMock::getBoundPort(evtchn_port_t port)
 {
-	auto it = find_if(mBoundPorts.begin(), mBoundPorts.end(),
-					  [&port](const BoundPort& boundPort)
-					  { return boundPort.localPort == port; });
-
-	if (it == mBoundPorts.end())
-	{
-		throw XenException("Port not bound");
-	}
-
-	return it;
+	return find_if(mBoundPorts.begin(), mBoundPorts.end(),
+				  [&port](const BoundPort& boundPort)
+				  { return boundPort.localPort == port; });
 }

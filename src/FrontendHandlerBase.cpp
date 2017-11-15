@@ -87,15 +87,15 @@ void FrontendHandlerBase::start()
 {
 	lock_guard<mutex> lock(mMutex);
 
-	mXenStore.start();
-
-	setBackendState(XenbusStateInitialising);
-
 	mXenStore.setWatch(mFeStatePath,
 					   bind(&FrontendHandlerBase::frontendStateChanged, this));
 
 	mXenStore.setWatch(mBeStatePath,
 					   bind(&FrontendHandlerBase::backendStateChanged, this));
+
+	setBackendState(XenbusStateInitialising);
+
+	mXenStore.start();
 }
 
 void FrontendHandlerBase::stop()
@@ -238,19 +238,13 @@ void FrontendHandlerBase::initXenStorePathes()
 {
 	stringstream ss;
 
-	ss << mXenStore.getDomainPath(mFeDomId) << "/device/"
-	   << mDevName << "/" << mDevId;
-
-	mXsFrontendPath = ss.str();
-
-	ss.str("");
-	ss.clear();
-
 	ss << mXenStore.getDomainPath(mBeDomId) << "/backend/"
 	   << mDevName << "/"
 	   << mFeDomId << "/" << mDevId;
 
 	mXsBackendPath = ss.str();
+
+	mXsFrontendPath = mXenStore.readString(mXsBackendPath + "/frontend");
 
 	mFeStatePath = mXsFrontendPath + "/state";
 	mBeStatePath = mXsBackendPath + "/state";

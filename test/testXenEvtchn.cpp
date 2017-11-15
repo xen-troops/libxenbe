@@ -68,8 +68,6 @@ TEST_CASE("XenEvtchn", "[xenevtchn]")
 
 	XenEvtchn eventChannel(3, 24, eventChannelCbk, errorHandling);
 
-	auto mock = XenEvtchnMock::getLastInstance();
-
 	eventChannel.start();
 
 	SECTION("Check notification")
@@ -79,9 +77,9 @@ TEST_CASE("XenEvtchn", "[xenevtchn]")
 
 		eventChannel.notify();
 
-		REQUIRE(eventChannel.getPort() == mock->getLastNotifiedPort());
+		REQUIRE(eventChannel.getPort() == XenEvtchnMock::getLastNotifiedPort());
 
-		mock->signalPort(eventChannel.getPort());
+		XenEvtchnMock::signalPort(eventChannel.getPort());
 
 		waitForCbk();
 
@@ -113,7 +111,7 @@ TEST_CASE("XenEvtchn", "[xenevtchn]")
 
 		XenEvtchnMock::setErrorMode(true);
 
-		mock->signalPort(eventChannel.getPort());
+		XenEvtchnMock::signalPort(eventChannel.getPort());
 
 		waitForCbk();
 

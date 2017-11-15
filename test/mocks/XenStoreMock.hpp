@@ -35,18 +35,28 @@ class XenStoreMock
 public:
 
 	XenStoreMock();
+	~XenStoreMock();
 
-	static XenStoreMock* getLastInstance() { return sLastInstance; }
-	static void setErrorMode(bool errorMode) { mErrorMode = errorMode; }
-	static bool getErrorMode() { return mErrorMode; }
+	static void setErrorMode(bool errorMode)
+	{
+		std::lock_guard<std::mutex> lock(sMutex);
+
+		sErrorMode = errorMode;
+	}
+	static bool getErrorMode()
+	{
+		std::lock_guard<std::mutex> lock(sMutex);
+
+		return sErrorMode;
+	}
+	static void setDomainPath(unsigned int domId, const std::string& path);
+	static const char* getDomainPath(unsigned int domId);
+	static void writeValue(const std::string& path, const std::string& value);
+	static const char* readValue(const std::string& path);
+	static bool deleteEntry(const std::string& path);
+	static std::vector<std::string> readDirectory(const std::string& path);
 
 	int getFd() const { return mPipe.getFd(); }
-	void setDomainPath(unsigned int domId, const std::string& path);
-	const char* getDomainPath(unsigned int domId);
-	void writeValue(const std::string& path, const std::string& value);
-	const char* readValue(const std::string& path);
-	bool deleteEntry(const std::string& path);
-	std::vector<std::string> readDirectory(const std::string& path);
 	bool watch(const std::string& path);
 	bool unwatch(const std::string& path);
 	bool getChangedEntry(std::string& path);
@@ -54,25 +64,28 @@ public:
 	typedef std::function<void(const std::string& path,
 							   const std::string& value)> Callback;
 
-	void setWriteValueCbk(Callback cbk) { mCallback = cbk; }
+	static void setWriteValueCbk(Callback cbk)
+	{
+		std::lock_guard<std::mutex> lock(sMutex);
+
+		sCallback = cbk;
+	}
 
 private:
 
-	static XenStoreMock* sLastInstance;
-	static bool mErrorMode;
-
-	std::mutex mMutex;
+	static std::mutex sMutex;
+	static bool sErrorMode;
+	static std::unordered_map<unsigned int, std::string> sDomPathes;
+	static std::unordered_map<std::string, std::string> sEntries;
+	static std::list<XenStoreMock*> sClients;
+	static Callback sCallback;
 
 	Pipe mPipe;
 
-	static std::unordered_map<unsigned int, std::string> mDomPathes;
-	static std::unordered_map<std::string, std::string> mEntries;
-
 	std::list<std::string> mWatches;
 	std::list<std::string> mChangedEntries;
-	Callback mCallback;
 
-	void pushWatch(const std::string& path);
+	static void pushWatch(const std::string& path);
 };
 
 #endif /* TEST_MOCKS_XENSTOREMOCK_HPP_ */

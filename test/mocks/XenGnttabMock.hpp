@@ -21,28 +21,39 @@
 #ifndef TEST_MOCKS_XENGNTTABMOCK_HPP_
 #define TEST_MOCKS_XENGNTTABMOCK_HPP_
 
+#include <mutex>
 #include <unordered_map>
 
 class XenGnttabMock
 {
 public:
 
-	XenGnttabMock();
+	static void setErrorMode(bool errorMode)
+	{
+		std::lock_guard<std::mutex> lock(sMutex);
 
-	static XenGnttabMock* getLastInstance() { return sLastInstance; }
-	static void setErrorMode(bool errorMode) { mErrorMode = errorMode; }
-	static bool getErrorMode() { return mErrorMode; }
+		sErrorMode = errorMode;
+	}
+	static bool getErrorMode()
+	{
+		std::lock_guard<std::mutex> lock(sMutex);
+
+		return sErrorMode;
+	}
+	static void* getLastBuffer()
+	{
+		std::lock_guard<std::mutex> lock(sMutex);
+
+		return sLastMappedAddress;
+	}
+
+	static size_t getMapBufferSize(void* address);
+	static size_t checkMapBuffers();
 
 	void* mapGrantRefs(uint32_t count, uint32_t domId, uint32_t *refs);
 	void unmapGrantRefs(void* address, uint32_t count);
-	void* getLastBuffer() const { return mLastMappedAddress; }
-	size_t getMapBufferSize(void* address);
-	size_t checkMapBuffers();
 
 private:
-
-	static XenGnttabMock* sLastInstance;
-	static bool mErrorMode;
 
 	struct MapBuffer
 	{
@@ -51,8 +62,10 @@ private:
 		size_t size;
 	};
 
-	void* mLastMappedAddress;
-	std::unordered_map<void*, MapBuffer> mMapBuffers;
+	static std::mutex sMutex;
+	static bool sErrorMode;
+	static void* sLastMappedAddress;
+	static std::unordered_map<void*, MapBuffer> sMapBuffers;
 };
 
 #endif /* TEST_MOCKS_XENGNTTABMOCK_HPP_ */
