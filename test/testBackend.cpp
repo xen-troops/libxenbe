@@ -99,9 +99,6 @@ TEST_CASE("BackendHandler", "[backendhandler]")
 
 	SECTION("Check adding frontend")
 	{
-		auto ctrlMock = XenCtrlMock::getLastInstance();
-		auto storeMock = XenStoreMock::getLastInstance();
-
 		REQUIRE(waitForFrontend());
 
 		REQUIRE(gNewFrontDomId == gFrontDomId);

@@ -86,13 +86,11 @@ TEST_CASE("XenStore", "[xenstore]")
 
 	xenStore.start();
 
-	auto mock = XenStoreMock::getLastInstance();
-
 	SECTION("Check getting domain path")
 	{
 		string path = "/local/domain/3/";
 
-		mock->setDomainPath(3, path);
+		XenStoreMock::setDomainPath(3, path);
 
 		REQUIRE_THAT(xenStore.getDomainPath(3), Catch::Matchers::Equals(path));
 	}
@@ -191,7 +189,7 @@ TEST_CASE("XenStore", "[xenstore]")
 
 		xenStore.setWatch(path, watchCbk1);
 
-		mock->writeValue(path, "Changed");
+		XenStoreMock::writeValue(path, "Changed");
 
 		waitForWatch();
 
@@ -204,7 +202,7 @@ TEST_CASE("XenStore", "[xenstore]")
 
 		xenStore.setWatch(path, watchCbk2);
 
-		mock->writeValue(path, value);
+		XenStoreMock::writeValue(path, value);
 
 		waitForWatch();
 

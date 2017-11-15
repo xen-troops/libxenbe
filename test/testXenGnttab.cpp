@@ -33,9 +33,8 @@ TEST_CASE("XenGnttab", "[xengnttab]")
 	{
 		XenGnttabBuffer xenBuffer(3, 14);
 
-		auto mock = XenGnttabMock::getLastInstance();
-
-		REQUIRE(xenBuffer.size() == mock->getMapBufferSize(xenBuffer.get()));
+		REQUIRE(xenBuffer.size() ==
+				XenGnttabMock::getMapBufferSize(xenBuffer.get()));
 	}
 
 	SECTION("Check multiple pages")
@@ -45,9 +44,8 @@ TEST_CASE("XenGnttab", "[xengnttab]")
 
 		XenGnttabBuffer  xenBuffer(3, refs, count);
 
-		auto mock = XenGnttabMock::getLastInstance();
-
-		REQUIRE(xenBuffer.size() == mock->getMapBufferSize(xenBuffer.get()));
+		REQUIRE(xenBuffer.size() ==
+				XenGnttabMock::getMapBufferSize(xenBuffer.get()));
 	}
 
 	SECTION("Check errors")

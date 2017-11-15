@@ -22,6 +22,7 @@
 #define TEST_MOCKS_XENCTRLMOCK_HPP_
 
 #include <list>
+#include <mutex>
 
 extern "C" {
 #include <xenctrl.h>
@@ -31,22 +32,28 @@ class XenCtrlMock
 {
 public:
 
-	XenCtrlMock();
+	static void setErrorMode(bool errorMode)
+	{
+		std::lock_guard<std::mutex> lock(sMutex);
 
-	static XenCtrlMock* getLastInstance() { return sLastInstance; }
-	static void setErrorMode(bool errorMode) { mErrorMode = errorMode; }
-	static bool getErrorMode() { return mErrorMode; }
+		sErrorMode = errorMode;
+	}
+	static bool getErrorMode()
+	{
+		std::lock_guard<std::mutex> lock(sMutex);
 
-	void addDomInfo(const xc_domaininfo_t& info);
-	int getDomInfos(domid_t firstDom, unsigned int maxDoms,
-					xc_domaininfo_t* info);
+		return sErrorMode;
+	}
+
+	static void addDomInfo(const xc_domaininfo_t& info);
+	static int getDomInfos(domid_t firstDom, unsigned int maxDoms,
+						   xc_domaininfo_t* info);
 
 private:
 
-	static XenCtrlMock* sLastInstance;
-	static bool mErrorMode;
-
-	std::list<xc_domaininfo_t> mDomInfos;
+	static std::mutex sMutex;
+	static bool sErrorMode;
+	static std::list<xc_domaininfo_t> sDomInfos;
 };
 
 #endif /* TEST_MOCKS_XENCTRLMOCK_HPP_ */

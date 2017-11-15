@@ -50,8 +50,6 @@ static bool gError = false;
 
 void sendReq(xentest_req& req, xen_test_front_ring& ring)
 {
-	auto evtchnMock = XenEvtchnMock::getLastInstance();
-
 	*RING_GET_REQUEST(&ring, ring.req_prod_pvt) = req;
 
 	ring.req_prod_pvt++;
@@ -62,7 +60,7 @@ void sendReq(xentest_req& req, xen_test_front_ring& ring)
 
 	if (notify)
 	{
-		evtchnMock->signalLastBoundPort();
+		XenEvtchnMock::signalPort(XenEvtchnMock::getLastBoundPort());
 	}
 	else
 	{
@@ -175,7 +173,7 @@ bool receiveEvent(xentest_event_page* eventPage, xentest_evt* eventBuffer,
 
 		eventPage->in_cons++;
 
-		XenEvtchnMock::getLastInstance()->signalLastBoundPort();
+		XenEvtchnMock::signalPort(XenEvtchnMock::getLastBoundPort());
 
 		return true;
 	}
@@ -215,23 +213,17 @@ TEST_CASE("RingBufferIn", "[ringbuffer]")
 
 	ringBuffer.start();
 
-	// get mocks
-	auto gnttabMock = XenGnttabMock::getLastInstance();
-	auto evtchnMock = XenEvtchnMock::getLastInstance();
-
 	// check mocks
-	REQUIRE(gnttabMock != nullptr);
-	REQUIRE(gnttabMock->getLastBuffer() != nullptr);
-	REQUIRE(gnttabMock->getMapBufferSize(gnttabMock->getLastBuffer()) ==
+	REQUIRE(XenGnttabMock::getLastBuffer() != nullptr);
+	REQUIRE(XenGnttabMock::getMapBufferSize(XenGnttabMock::getLastBuffer()) ==
 			XC_PAGE_SIZE);
 
-	REQUIRE(evtchnMock != nullptr);
-
-	evtchnMock->setNotifyCbk(respNotification);
+	XenEvtchnMock::setNotifyCbk(XenEvtchnMock::getLastBoundPort(),
+								respNotification);
 
 	// init ring
 	xen_test_front_ring ring;
-	auto sring = static_cast<xen_test_sring*>(gnttabMock->getLastBuffer());
+	auto sring = static_cast<xen_test_sring*>(XenGnttabMock::getLastBuffer());
 
 	SHARED_RING_INIT(sring);
 	FRONT_RING_INIT(&ring, sring, XC_PAGE_SIZE);
@@ -274,7 +266,7 @@ TEST_CASE("RingBufferIn", "[ringbuffer]")
 	{
 		sring->req_prod = ring.nr_ents + 1;
 
-		evtchnMock->signalLastBoundPort();
+		XenEvtchnMock::signalPort(XenEvtchnMock::getLastBoundPort());
 
 		// wait when error is detected
 		sleep_for(milliseconds(100));
@@ -296,23 +288,16 @@ TEST_CASE("RingBufferOut", "[ringbuffer]")
 
 	ringBuffer.start();
 
-	// get mocks
-	auto gnttabMock = XenGnttabMock::getLastInstance();
-	auto evtchnMock = XenEvtchnMock::getLastInstance();
-
 	// check mocks
-	REQUIRE(gnttabMock != nullptr);
-	REQUIRE(gnttabMock->getLastBuffer() != nullptr);
-	REQUIRE(gnttabMock->getMapBufferSize(gnttabMock->getLastBuffer()) ==
+	REQUIRE(XenGnttabMock::getLastBuffer() != nullptr);
+	REQUIRE(XenGnttabMock::getMapBufferSize(XenGnttabMock::getLastBuffer()) ==
 			XC_PAGE_SIZE);
-
-	REQUIRE(evtchnMock != nullptr);
 
 	// init ring
 	xentest_event_page* eventPage = static_cast<xentest_event_page*>(
-			gnttabMock->getLastBuffer());
+			XenGnttabMock::getLastBuffer());
 	xentest_evt* eventBuffer = reinterpret_cast<xentest_evt*>(
-			static_cast<uint8_t*>(gnttabMock->getLastBuffer()) +
+			static_cast<uint8_t*>(XenGnttabMock::getLastBuffer()) +
 			XENTEST_IN_RING_OFFS);
 
 	eventPage->in_cons = 0;

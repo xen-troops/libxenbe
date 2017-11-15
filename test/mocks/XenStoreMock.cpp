@@ -30,6 +30,7 @@ extern "C" {
 }
 
 using std::find;
+using std::list;
 using std::lock_guard;
 using std::mutex;
 using std::string;
@@ -266,15 +267,24 @@ char** xs_check_watch(xs_handle* h)
  * XenStoreMock
  ******************************************************************************/
 
-XenStoreMock* XenStoreMock::sLastInstance = nullptr;
-bool XenStoreMock::mErrorMode = false;
+bool XenStoreMock::sErrorMode = false;
 
-unordered_map<unsigned int, string> XenStoreMock::mDomPathes;
-unordered_map<string, string> XenStoreMock::mEntries;
+unordered_map<unsigned int, string> XenStoreMock::sDomPathes;
+unordered_map<string, string> XenStoreMock::sEntries;
+
+list<XenStoreMock*> XenStoreMock::sClients;
+
+XenStoreMock::Callback XenStoreMock::sCallback;
+mutex XenStoreMock::sMutex;
 
 XenStoreMock::XenStoreMock()
 {
-	sLastInstance = this;
+	sClients.push_back(this);
+}
+
+XenStoreMock::~XenStoreMock()
+{
+	sClients.remove(this);
 }
 
 /*******************************************************************************
@@ -283,18 +293,18 @@ XenStoreMock::XenStoreMock()
 
 void XenStoreMock::setDomainPath(unsigned int domId, const std::string& path)
 {
-	lock_guard<mutex> lock(mMutex);
+	lock_guard<mutex> lock(sMutex);
 
-	mDomPathes[domId] = path;
+	sDomPathes[domId] = path;
 }
 
 const char* XenStoreMock::getDomainPath(unsigned int domId)
 {
-	lock_guard<mutex> lock(mMutex);
+	lock_guard<mutex> lock(sMutex);
 
-	auto it = mDomPathes.find(domId);
+	auto it = sDomPathes.find(domId);
 
-	if (it != mDomPathes.end())
+	if (it != sDomPathes.end())
 	{
 		return it->second.c_str();
 	}
@@ -304,13 +314,13 @@ const char* XenStoreMock::getDomainPath(unsigned int domId)
 
 void XenStoreMock::writeValue(const string& path, const string& value)
 {
-	lock_guard<mutex> lock(mMutex);
+	lock_guard<mutex> lock(sMutex);
 
-	mEntries[path] = value;
+	sEntries[path] = value;
 
-	if (mCallback)
+	if (sCallback)
 	{
-		mCallback(path, value);
+		sCallback(path, value);
 	}
 
 	pushWatch(path);
@@ -318,16 +328,16 @@ void XenStoreMock::writeValue(const string& path, const string& value)
 
 const char* XenStoreMock::readValue(const std::string& path)
 {
-	lock_guard<mutex> lock(mMutex);
+	lock_guard<mutex> lock(sMutex);
 
-	auto it = mEntries.find(path);
+	auto it = sEntries.find(path);
 
-	if (it != mEntries.end())
+	if (it != sEntries.end())
 	{
 		return it->second.c_str();
 	}
 
-	for(auto entry : mEntries)
+	for(auto entry : sEntries)
 	{
 		if (entry.first.compare(0, path.length(), path) == 0)
 		{
@@ -340,13 +350,13 @@ const char* XenStoreMock::readValue(const std::string& path)
 
 bool XenStoreMock::deleteEntry(const std::string& path)
 {
-	lock_guard<mutex> lock(mMutex);
+	lock_guard<mutex> lock(sMutex);
 
-	auto it = mEntries.find(path);
+	auto it = sEntries.find(path);
 
-	if (it != mEntries.end())
+	if (it != sEntries.end())
 	{
-		mEntries.erase(it);
+		sEntries.erase(it);
 
 		pushWatch(path);
 
@@ -358,7 +368,7 @@ bool XenStoreMock::deleteEntry(const std::string& path)
 
 vector<string> XenStoreMock::readDirectory(const string& path)
 {
-	lock_guard<mutex> lock(mMutex);
+	lock_guard<mutex> lock(sMutex);
 
 	vector<string> result;
 
@@ -369,7 +379,7 @@ vector<string> XenStoreMock::readDirectory(const string& path)
 		dirPath.append("/");
 	}
 
-	for(auto entry : mEntries)
+	for(auto entry : sEntries)
 	{
 		auto element = entry.first;
 
@@ -404,7 +414,7 @@ vector<string> XenStoreMock::readDirectory(const string& path)
 
 bool XenStoreMock::watch(const std::string& path)
 {
-	lock_guard<mutex> lock(mMutex);
+	lock_guard<mutex> lock(sMutex);
 
 	if (find(mWatches.begin(), mWatches.end(), path) == mWatches.end())
 	{
@@ -418,7 +428,7 @@ bool XenStoreMock::watch(const std::string& path)
 
 bool XenStoreMock::unwatch(const std::string& path)
 {
-	lock_guard<mutex> lock(mMutex);
+	lock_guard<mutex> lock(sMutex);
 
 	auto it = find(mWatches.begin(), mWatches.end(), path);
 
@@ -434,7 +444,7 @@ bool XenStoreMock::unwatch(const std::string& path)
 
 bool XenStoreMock::getChangedEntry(std::string& path)
 {
-	lock_guard<mutex> lock(mMutex);
+	lock_guard<mutex> lock(sMutex);
 
 	if (mChangedEntries.size())
 	{
@@ -452,9 +462,13 @@ bool XenStoreMock::getChangedEntry(std::string& path)
 
 void XenStoreMock::pushWatch(const std::string& path)
 {
-	if (find(mWatches.begin(), mWatches.end(), path) != mWatches.end())
+	for(auto client : sClients)
 	{
-		mChangedEntries.push_back(path);
-		mPipe.write();
+		if (find(client->mWatches.begin(), client->mWatches.end(), path) !=
+			client->mWatches.end())
+		{
+			client->mChangedEntries.push_back(path);
+			client->mPipe.write();
+		}
 	}
 }
