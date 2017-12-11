@@ -397,11 +397,9 @@ public:
 
 		if (mCurrentLevel <= mSetLevel && mSetLevel > LogLevel::logDISABLE)
 		{
-			mStream << std::endl;
-
 			std::lock_guard<std::mutex> lock(sMutex);
 
-			Log::getOutputStream() << mStream.str();
+			Log::getOutputStream() << mStream.str() << std::endl;
 		}
 	}
 
