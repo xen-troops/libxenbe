@@ -363,19 +363,20 @@ void FrontendHandlerBase::release()
 
 void FrontendHandlerBase::close(xenbus_state stateAfterClose)
 {
-	if (mBackendState != XenbusStateClosed &&
-		mBackendState != XenbusStateUnknown)
+	LOG(mLog, INFO) << "Close";
+
+	if (mBackendState != XenbusStateClosed)
 	{
 		setBackendState(XenbusStateClosing);
-
-		onClosing();
-
-		release();
-
-		setBackendState(XenbusStateClosed);
-
-		setBackendState(stateAfterClose);
 	}
+
+	onClosing();
+
+	release();
+
+	setBackendState(XenbusStateClosed);
+
+	setBackendState(stateAfterClose);
 }
 
 }
