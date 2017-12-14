@@ -18,8 +18,8 @@
  * Copyright (C) 2016 EPAM Systems Inc.
  */
 
-#ifndef SRC_XEN_XENSTAT_HPP_
-#define SRC_XEN_XENSTAT_HPP_
+#ifndef XENBE_XENSTAT_HPP_
+#define XENBE_XENSTAT_HPP_
 
 #include <vector>
 
@@ -66,4 +66,4 @@ private:
 
 }
 
-#endif /* SRC_XEN_XENSTAT_HPP_ */
+#endif /* XENBE_XENSTAT_HPP_ */

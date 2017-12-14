@@ -18,8 +18,8 @@
  * Copyright (C) 2016 EPAM Systems Inc.
  */
 
-#ifndef INCLUDE_RINGBUFFERBASE_HPP_
-#define INCLUDE_RINGBUFFERBASE_HPP_
+#ifndef XENBE_RINGBUFFERBASE_HPP_
+#define XENBE_RINGBUFFERBASE_HPP_
 
 #include <mutex>
 
@@ -325,4 +325,4 @@ typedef std::shared_ptr<RingBufferBase> RingBufferPtr;
 
 }
 
-#endif /* INCLUDE_RINGBUFFERBASE_HPP_ */
+#endif /* XENBE_RINGBUFFERBASE_HPP_ */

@@ -18,8 +18,8 @@
  * Copyright (C) 2016 EPAM Systems Inc.
  */
 
-#ifndef SRC_XEN_LOG_HPP_
-#define SRC_XEN_LOG_HPP_
+#ifndef XENBE_LOG_HPP_
+#define XENBE_LOG_HPP_
 
 #include <algorithm>
 #include <chrono>
@@ -489,4 +489,4 @@ private:
 
 }
 
-#endif /* SRC_XEN_LOG_HPP_ */
+#endif /* XENBE_LOG_HPP_ */

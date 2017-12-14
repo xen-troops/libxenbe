@@ -18,8 +18,8 @@
  * Copyright (C) 2016 EPAM Systems Inc.
  */
 
-#ifndef INCLUDE_FRONTENDHANDLERBASE_HPP_
-#define INCLUDE_FRONTENDHANDLERBASE_HPP_
+#ifndef XENBE_FRONTENDHANDLERBASE_HPP_
+#define XENBE_FRONTENDHANDLERBASE_HPP_
 
 #include <list>
 #include <memory>
@@ -287,4 +287,4 @@ typedef std::shared_ptr<FrontendHandlerBase> FrontendHandlerPtr;
 
 }
 
-#endif /* INCLUDE_FRONTENDHANDLERBASE_HPP_ */
+#endif /* XENBE_FRONTENDHANDLERBASE_HPP_ */

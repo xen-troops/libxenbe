@@ -18,8 +18,8 @@
  * Copyright (C) 2016 EPAM Systems Inc.
  */
 
-#ifndef SRC_XEN_XENEVTCHN_HPP_
-#define SRC_XEN_XENEVTCHN_HPP_
+#ifndef XENBE_XENEVTCHN_HPP_
+#define XENBE_XENEVTCHN_HPP_
 
 #include <atomic>
 #include <mutex>
@@ -139,4 +139,4 @@ private:
 
 }
 
-#endif /* SRC_XEN_XENEVTCHN_HPP_ */
+#endif /* XENBE_XENEVTCHN_HPP_ */
