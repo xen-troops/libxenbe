@@ -18,8 +18,8 @@
  *
  */
 
-#ifndef SRC_XEN_XENGNTTAB_HPP_
-#define SRC_XEN_XENGNTTAB_HPP_
+#ifndef XENBE_XENGNTTAB_HPP_
+#define XENBE_XENGNTTAB_HPP_
 
 #include <sys/mman.h>
 
@@ -128,4 +128,4 @@ private:
 
 }
 
-#endif /* SRC_XEN_XENGNTTAB_HPP_ */
+#endif /* XENBE_XENGNTTAB_HPP_ */

@@ -19,8 +19,8 @@
  */
 
 
-#ifndef SRC_XEN_XENCTRL_HPP_
-#define SRC_XEN_XENCTRL_HPP_
+#ifndef XENBE_XENCTRL_HPP_
+#define XENBE_XENCTRL_HPP_
 
 #include <vector>
 
@@ -75,4 +75,4 @@ private:
 
 }
 
-#endif /* SRC_XEN_XENCTRL_HPP_ */
+#endif /* XENBE_XENCTRL_HPP_ */

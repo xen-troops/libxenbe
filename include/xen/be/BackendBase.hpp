@@ -20,8 +20,8 @@
  * Copyright (C) 2016 EPAM Systems Inc.
  */
 
-#ifndef INCLUDE_BACKENDBASE_HPP_
-#define INCLUDE_BACKENDBASE_HPP_
+#ifndef XENBE_BACKENDBASE_HPP_
+#define XENBE_BACKENDBASE_HPP_
 
 #include <atomic>
 #include <list>
@@ -162,4 +162,4 @@ private:
 
 }
 
-#endif /* INCLUDE_BACKENDBASE_HPP_ */
+#endif /* XENBE_BACKENDBASE_HPP_ */

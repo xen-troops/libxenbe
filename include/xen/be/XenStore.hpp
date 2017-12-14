@@ -18,8 +18,8 @@
  * Copyright (C) 2016 EPAM Systems Inc.
  */
 
-#ifndef INCLUDE_XENSTORE_HPP_
-#define INCLUDE_XENSTORE_HPP_
+#ifndef XENBE_XENSTORE_HPP_
+#define XENBE_XENSTORE_HPP_
 
 #include <atomic>
 #include <functional>
@@ -192,4 +192,4 @@ private:
 
 }
 
-#endif /* INCLUDE_XENSTORE_HPP_ */
+#endif /* XENBE_XENSTORE_HPP_ */

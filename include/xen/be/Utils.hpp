@@ -18,8 +18,8 @@
  * Copyright (C) 2016 EPAM Systems Inc.
  */
 
-#ifndef SRC_XEN_UTILS_HPP_
-#define SRC_XEN_UTILS_HPP_
+#ifndef XENBE_UTILS_HPP_
+#define XENBE_UTILS_HPP_
 
 #include <condition_variable>
 #include <list>
@@ -202,4 +202,4 @@ private:
 
 }
 
-#endif /* SRC_XEN_UTILS_HPP_ */
+#endif /* XENBE_UTILS_HPP_ */
