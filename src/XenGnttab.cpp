@@ -32,7 +32,7 @@ XenGnttab::XenGnttab()
 
 	if (!mHandle)
 	{
-		throw XenGnttabException("Can't open xc grant table");
+		throw XenGnttabException("Can't open xc grant table", errno);
 	}
 }
 
@@ -89,7 +89,7 @@ void XenGnttabBuffer::init(domid_t domId, const grant_ref_t* refs,
 
 	if (!mBuffer)
 	{
-		throw XenGnttabException("Can't map buffer");
+		throw XenGnttabException("Can't map buffer", errno);
 	}
 
 }

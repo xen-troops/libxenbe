@@ -21,7 +21,6 @@
 
 #include <poll.h>
 
-using std::exception;
 using std::lock_guard;
 using std::mutex;
 using std::string;
@@ -45,7 +44,7 @@ XenStore::XenStore(ErrorCallback errorCallback) :
 	{
 		init();
 	}
-	catch(const XenException& e)
+	catch(const std::exception& e)
 	{
 		release();
 
@@ -72,7 +71,7 @@ string XenStore::getDomainPath(domid_t domId)
 
 	if (!domPath)
 	{
-		throw XenStoreException("Can't get domain path");
+		throw XenStoreException("Can't get domain path", errno);
 	}
 
 	string result(domPath);
@@ -108,7 +107,7 @@ string XenStore::readString(const string& path)
 
 	if (!pData)
 	{
-		throw XenStoreException("Can't read from: " + path);
+		throw XenStoreException("Can't read from: " + path, errno);
 	}
 
 	string result(pData);
@@ -145,7 +144,7 @@ void XenStore::writeString(const string& path, const string& value)
 	if (!xs_write(mXsHandle, XBT_NULL, path.c_str(), value.c_str(),
 				  value.length()))
 	{
-		throw XenStoreException("Can't write value to " + path);
+		throw XenStoreException("Can't write value to " + path, errno);
 	}
 }
 
@@ -155,7 +154,7 @@ void XenStore::removePath(const string& path)
 
 	if (!xs_rm(mXsHandle, XBT_NULL, path.c_str()))
 	{
-		throw XenStoreException("Can't remove path " + path);
+		throw XenStoreException("Can't remove path " + path, errno);
 	}
 }
 
@@ -206,7 +205,7 @@ void XenStore::setWatch(const string& path, WatchCallback callback)
 
 	if (!xs_watch(mXsHandle, path.c_str(), path.c_str()))
 	{
-		throw XenStoreException("Can't set xs watch for " + path);
+		throw XenStoreException("Can't set xs watch for " + path, errno);
 	}
 
 	mWatches[path] = callback;
@@ -252,7 +251,7 @@ void XenStore::start()
 
 	if (mStarted)
 	{
-		throw XenStoreException("XenStore is already started");
+		throw XenStoreException("XenStore is already started", errno);
 	}
 
 	mStarted = true;
@@ -292,7 +291,7 @@ void XenStore::init()
 
 	if (!mXsHandle)
 	{
-		throw XenStoreException("Can't open xs daemon");
+		throw XenStoreException("Can't open xs daemon", errno);
 	}
 
 	mPollFd.reset(new PollFd(xs_fileno(mXsHandle), POLLIN));
@@ -372,7 +371,7 @@ void XenStore::watchesThread()
 			}
 		}
 	}
-	catch(const exception& e)
+	catch(const std::exception& e)
 	{
 		if (mErrorCallback)
 		{

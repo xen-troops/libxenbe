@@ -35,7 +35,7 @@ XenInterface::XenInterface() :
 	{
 		init();
 	}
-	catch(const XenException& e)
+	catch(const std::exception& e)
 	{
 		release();
 
@@ -69,7 +69,7 @@ void XenInterface::getDomainsInfo(vector<xc_domaininfo_t>& infos)
 
 		if (newDomains < 0)
 		{
-			throw XenCtrlException("Can't get domain info");
+			throw XenCtrlException("Can't get domain info", errno);
 		}
 
 		if (newDomains)
@@ -94,7 +94,7 @@ void XenInterface::init()
 
 	if (!mHandle)
 	{
-		throw XenCtrlException("Can't open xc interface");
+		throw XenCtrlException("Can't open xc interface", EINVAL);
 	}
 
 	DLOG(mLog, DEBUG) << "Create xen interface";

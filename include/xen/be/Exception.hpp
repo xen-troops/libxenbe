@@ -19,12 +19,14 @@
  *
  */
 
-#ifndef SRC_XEN_XENEXCEPTION_HPP_
-#define SRC_XEN_XENEXCEPTION_HPP_
+#ifndef XENBE_EXCEPTION_HPP_
+#define XENBE_EXCEPTION_HPP_
 
 #include <exception>
 #include <functional>
 #include <string>
+
+#include <cstring>
 
 namespace XenBackend {
 
@@ -37,23 +39,31 @@ typedef std::function<void(const std::exception&)> ErrorCallback;
  * Base class for all Xen exception.
  * @ingroup xen
  ******************************************************************************/
-class XenException : public std::exception
+class Exception : public std::exception
 {
 public:
 	/**
 	 * @param msg error message
 	 */
-	explicit XenException(const std::string& msg) : mMsg(msg) {};
+	explicit Exception(const std::string& msg, int errCode) :
+		mMsg(msg + " (" + strerror(errCode) + ")"),
+		mErrCode(errCode) {};
 
 	/**
 	 * returns error message
 	 */
 	const char* what() const throw() { return mMsg.c_str(); };
 
+	/**
+	 * returns error code
+	 */
+	int getErrno() const { return mErrCode; }
+
 private:
 	std::string mMsg;
+	int mErrCode;
 };
 
 }
 
-#endif /* SRC_XEN_XENEXCEPTION_HPP_ */
+#endif /* XENBE_EXCEPTION_HPP_ */

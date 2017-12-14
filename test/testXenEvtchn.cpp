@@ -29,7 +29,6 @@
 
 using std::chrono::milliseconds;
 using std::condition_variable;
-using std::exception;
 using std::mutex;
 using std::unique_lock;
 
@@ -41,7 +40,7 @@ static condition_variable gCondVar;
 static int gNumErrors = 0;
 static bool gEventChannelCbk = false;
 
-static void errorHandling(const exception& e)
+static void errorHandling(const std::exception& e)
 {
 	gNumErrors++;
 }

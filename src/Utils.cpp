@@ -23,13 +23,11 @@
 #include <cstring>
 #include <vector>
 
-#include "XenException.hpp"
-
+#include "Exception.hpp"
 #include "Version.hpp"
 
 using std::chrono::milliseconds;
 using std::cv_status;
-using std::exception;
 using std::function;
 using std::lock_guard;
 using std::mutex;
@@ -83,7 +81,7 @@ PollFd::PollFd(int fd, short int events)
 	{
 		init(fd, events);
 	}
-	catch(const exception& e)
+	catch(const std::exception& e)
 	{
 		release();
 
@@ -105,8 +103,7 @@ bool PollFd::poll()
 	{
 		if (errno != EINTR)
 		{
-			throw XenException("Error polling files: " +
-							   string(strerror(errno)));
+			throw Exception("Error polling files", errno);
 		}
 	}
 
@@ -116,8 +113,7 @@ bool PollFd::poll()
 
 		if (read(mFds[PollIndex::PIPE].fd, &data, sizeof(data)) < 0)
 		{
-			throw XenException("Error reading pipe: " +
-							   string(strerror(errno)));
+			throw Exception("Error reading pipe", errno);
 		}
 
 		return false;
@@ -125,7 +121,7 @@ bool PollFd::poll()
 
 	if (mFds[PollIndex::FILE].revents & (~mFds[PollIndex::FILE].events))
 	{
-		throw XenException("Error reading file");
+		throw Exception("Error reading file", errno);
 	}
 
 	return true;
@@ -137,7 +133,7 @@ void PollFd::stop()
 
 	if (write(mPipeFds[PipeType::WRITE], &data, sizeof(data)) < 0)
 	{
-		throw XenException("Error writing pipe: " + string(strerror(errno)));
+		throw Exception("Error writing pipe", errno);
 	}
 }
 
@@ -148,7 +144,7 @@ void PollFd::init(int fd, short int events)
 
 	if (pipe(mPipeFds) < 0)
 	{
-		throw XenException("Can't create pipe: " + string(strerror(errno)));
+		throw Exception("Can't create pipe", errno);
 	}
 
 	mFds[PollIndex::FILE].fd = fd;
@@ -265,7 +261,7 @@ void Timer::start()
 	}
 	else
 	{
-		throw XenException("Timer is already started");
+		throw Exception("Timer is already started", EPERM);
 	}
 }
 

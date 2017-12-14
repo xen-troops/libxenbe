@@ -26,7 +26,6 @@
 #include "Utils.hpp"
 
 using std::bind;
-using std::exception;
 using std::find_if;
 using std::list;
 using std::make_pair;
@@ -135,7 +134,7 @@ void BackendBase::addFrontendHandler(FrontendHandlerPtr frontendHandler)
 
 	if (getFrontendHandler(domId, devId))
 	{
-		throw BackendException("Frontend already exists");
+		throw BackendException("Frontend already exists", EEXIST);
 	}
 
 	auto frontendPath = mFrontendsPath + "/" + to_string(domId) + "/" +
@@ -201,7 +200,7 @@ void BackendBase::deviceListChanged(const string& path, domid_t domId)
 				onNewFrontend(domId, devId);
 			}
 		}
-		catch(const exception& e)
+		catch(const std::exception& e)
 		{
 			LOG(mLog, ERROR) << e.what();
 		}
@@ -247,7 +246,7 @@ FrontendHandlerPtr BackendBase::getFrontendHandler(domid_t domId,
 	return FrontendHandlerPtr();
 }
 
-void BackendBase::onError(const exception& e)
+void BackendBase::onError(const std::exception& e)
 {
 	LOG(mLog, ERROR) << e.what();
 }

@@ -24,14 +24,14 @@
 
 #include <cstdlib>
 
-#include "XenException.hpp"
+#include "Exception.hpp"
 
 using std::find_if;
 using std::list;
 using std::lock_guard;
 using std::mutex;
 
-using XenBackend::XenException;
+using XenBackend::Exception;
 
 /*******************************************************************************
  * Xen interface
@@ -190,7 +190,7 @@ evtchn_port_t XenEvtchnMock::bind(domid_t domId, evtchn_port_t remotePort)
 
 	if (it != mBoundPorts.end())
 	{
-		throw XenException("Port already bound");
+		throw Exception("Port already bound", EPERM);
 	}
 
 	BoundPort boundPort = { domId, remotePort, sPort++ };
@@ -210,7 +210,7 @@ void XenEvtchnMock::unbind(evtchn_port_t port)
 
 	if (it == mBoundPorts.end())
 	{
-		throw XenException("Port not bound");
+		throw Exception("Port not bound", EINVAL);
 	}
 
 	mBoundPorts.erase(it);
@@ -232,7 +232,7 @@ evtchn_port_t XenEvtchnMock::getPendingPort()
 {
 	if (mSignaledPorts.size() == 0)
 	{
-		throw XenException("No pending ports");
+		throw Exception("No pending ports", ENOENT);
 	}
 
 	evtchn_port_t port = mSignaledPorts.front();
@@ -258,7 +258,7 @@ XenEvtchnMock* XenEvtchnMock::getClientByPort(evtchn_port_t port)
 		}
 	}
 
-	throw XenException("Port not bound");
+	throw Exception("Port not bound", ENOENT);
 }
 
 list<XenEvtchnMock::BoundPort>::iterator
