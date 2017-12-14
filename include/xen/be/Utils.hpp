@@ -21,7 +21,6 @@
 #ifndef SRC_XEN_UTILS_HPP_
 #define SRC_XEN_UTILS_HPP_
 
-#include <atomic>
 #include <condition_variable>
 #include <list>
 #include <string>
@@ -149,7 +148,7 @@ public:
 
 private:
 
-	std::atomic_bool mTerminate;
+	bool mTerminate;
 	std::mutex mMutex;
 	std::condition_variable mCondVar;
 	std::thread mThread;
@@ -192,7 +191,7 @@ private:
 	std::chrono::milliseconds mTime;
 	bool mPeriodic;
 
-	std::atomic_bool mTerminate;
+	bool mTerminate;
 	std::thread mThread;
 	std::mutex mMutex;
 	std::mutex mItfMutex;
