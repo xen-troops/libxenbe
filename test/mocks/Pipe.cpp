@@ -25,11 +25,11 @@
 
 #include <unistd.h>
 
-#include "XenException.hpp"
+#include "Exception.hpp"
 
 using std::string;
 
-using XenBackend::XenException;
+using XenBackend::Exception;
 
 /*******************************************************************************
  * Pipe
@@ -42,7 +42,7 @@ Pipe::Pipe()
 
 	if (pipe(mFds) < 0)
 	{
-		throw XenException("Can't create pipe: " + string(strerror(errno)));
+		throw Exception("Can't create pipe", errno);
 	}
 }
 
@@ -68,7 +68,7 @@ void Pipe::read()
 
 	if (::read(mFds[PipeType::READ], &data, sizeof(data)) < 0)
 	{
-		throw XenException("Error reading pipe: " + string(strerror(errno)));
+		throw Exception("Error reading pipe", errno);
 	}
 }
 
@@ -78,6 +78,6 @@ void Pipe::write()
 
 	if (::write(mFds[PipeType::WRITE], &data, sizeof(data)) < 0)
 	{
-		throw XenException("Error writing pipe: " + string(strerror(errno)));
+		throw Exception("Error writing pipe", errno);
 	}
 }

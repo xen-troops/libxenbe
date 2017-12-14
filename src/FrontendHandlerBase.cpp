@@ -33,7 +33,6 @@ extern "C" {
 #include "Utils.hpp"
 
 using std::bind;
-using std::exception;
 using std::find;
 using std::lock_guard;
 using std::make_pair;

@@ -30,7 +30,6 @@
 
 using std::chrono::milliseconds;
 using std::condition_variable;
-using std::exception;
 using std::find;
 using std::mutex;
 using std::string;
@@ -48,7 +47,7 @@ static int gNumErrors = 0;
 static bool gWatchCbk1 = false;
 static bool gWatchCbk2 = false;
 
-static void errorHandling(const exception& e)
+static void errorHandling(const std::exception& e)
 {
 	gNumErrors++;
 }

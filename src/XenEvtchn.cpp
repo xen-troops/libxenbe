@@ -22,7 +22,6 @@
 
 #include <poll.h>
 
-using std::exception;
 using std::lock_guard;
 using std::mutex;
 using std::thread;
@@ -47,7 +46,7 @@ XenEvtchn::XenEvtchn(domid_t domId, evtchn_port_t port, Callback callback,
 	{
 		init(domId, port);
 	}
-	catch(const XenException& e)
+	catch(const std::exception& e)
 	{
 		release();
 
@@ -71,7 +70,7 @@ void XenEvtchn::start()
 
 	if (mStarted)
 	{
-		throw XenEvtchnException("Event channel is already started");
+		throw XenEvtchnException("Event channel is already started", EPERM);
 	}
 
 	mStarted = true;
@@ -107,7 +106,7 @@ void XenEvtchn::notify()
 
 	if (xenevtchn_notify(mHandle, mPort) < 0)
 	{
-		throw XenEvtchnException("Can't notify event channel");
+		throw XenEvtchnException("Can't notify event channel", errno);
 	}
 }
 
@@ -128,14 +127,15 @@ void XenEvtchn::init(domid_t domId, evtchn_port_t port)
 
 	if (!mHandle)
 	{
-		throw XenEvtchnException("Can't open event channel");
+		throw XenEvtchnException("Can't open event channel", errno);
 	}
 
 	mPort = xenevtchn_bind_interdomain(mHandle, domId, port);
 
 	if (mPort == -1)
 	{
-		throw XenEvtchnException("Can't bind event channel: " + to_string(port));
+		throw XenEvtchnException("Can't bind event channel: " + to_string(port),
+								 errno);
 	}
 
 	mPollFd.reset(new PollFd(xenevtchn_fd(mHandle), POLLIN));
@@ -170,19 +170,19 @@ void XenEvtchn::eventThread()
 
 			if (port < 0)
 			{
-				throw XenEvtchnException("Can't get pending port");
+				throw XenEvtchnException("Can't get pending port", errno);
 			}
 
 			if (xenevtchn_unmask(mHandle, port) < 0)
 			{
-				throw XenEvtchnException("Can't unmask event channel");
+				throw XenEvtchnException("Can't unmask event channel", errno);
 			}
 
 			if (port != mPort)
 			{
 				throw XenEvtchnException("Error port number: " +
 										 to_string(port) + ", expected: " +
-										 to_string(mPort));
+										 to_string(mPort), EINVAL);
 			}
 
 			DLOG(mLog, DEBUG) << "Event received, port: " << mPort;
@@ -190,7 +190,7 @@ void XenEvtchn::eventThread()
 			mCallback();
 		}
 	}
-	catch(const exception& e)
+	catch(const std::exception& e)
 	{
 		lock_guard<mutex> lock(mMutex);
 

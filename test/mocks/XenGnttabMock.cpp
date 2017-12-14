@@ -27,13 +27,13 @@ extern "C" {
 #include <xengnttab.h>
 }
 
-#include "XenException.hpp"
+#include "Exception.hpp"
 
 using std::lock_guard;
 using std::mutex;
 using std::unordered_map;
 
-using XenBackend::XenException;
+using XenBackend::Exception;
 
 /*******************************************************************************
  * Xen interface
@@ -138,12 +138,12 @@ void XenGnttabMock::unmapGrantRefs(void* address, uint32_t count)
 
 	if (it == sMapBuffers.end())
 	{
-		throw XenException("Buffer not found");
+		throw Exception("Buffer not found", ENOENT);
 	}
 
 	if (count != it->second.count)
 	{
-		throw XenException("Wrong cound");
+		throw Exception("Wrong count", EINVAL);
 	}
 
 	free(it->first);
@@ -159,7 +159,7 @@ size_t XenGnttabMock::getMapBufferSize(void* address)
 
 	if (it == sMapBuffers.end())
 	{
-		throw XenException("Buffer not found");
+		throw Exception("Buffer not found", ENOENT);
 	}
 
 	return it->second.size;
