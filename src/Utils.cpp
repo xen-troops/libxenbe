@@ -213,10 +213,10 @@ void AsyncContext::call(AsyncCall f)
 
 void AsyncContext::run()
 {
+	unique_lock<mutex> lock(mMutex);
+
 	while(!mTerminate)
 	{
-		unique_lock<mutex> lock(mMutex);
-
 		mCondVar.wait(lock, [this] { return mTerminate ||
 									 !mAsyncCalls.empty(); });
 
@@ -290,10 +290,10 @@ void Timer::stop()
 
 void Timer::run()
 {
+	unique_lock<mutex> lock(mMutex);
+
 	do
 	{
-		unique_lock<mutex> lock(mMutex);
-
 		if (!mCondVar.wait_for(lock, mTime, [this]
 							   { return static_cast<bool>(mTerminate); }))
 		{
