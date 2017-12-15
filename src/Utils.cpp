@@ -236,9 +236,8 @@ void AsyncContext::run()
  * Timer
  ******************************************************************************/
 
-Timer::Timer(function<void()> callback, milliseconds time, bool periodic) :
+Timer::Timer(function<void()> callback, bool periodic) :
 	mCallback(callback),
-	mTime(time),
 	mPeriodic(periodic),
 	mTerminate(true)
 {
@@ -249,12 +248,14 @@ Timer::~Timer()
 	stop();
 }
 
-void Timer::start()
+void Timer::start(milliseconds time)
 {
 	lock_guard<mutex> lock(mItfMutex);
 
 	if (mTerminate)
 	{
+		mTime = time;
+
 		mTerminate = false;
 
 		mThread = thread(&Timer::run, this);
