@@ -171,14 +171,13 @@ public:
 
 	typedef std::function<void()> Callback;
 
-	Timer(Callback callback, std::chrono::milliseconds time,
-		  bool periodic = false);
+	Timer(Callback callback, bool periodic = false);
 	~Timer();
 
 	/**
 	 * Starts timer
 	 */
-	void start();
+	void start(std::chrono::milliseconds time);
 
 	/**
 	 * Stops timer
