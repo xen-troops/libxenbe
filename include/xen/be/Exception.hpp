@@ -46,13 +46,20 @@ public:
 	 * @param msg error message
 	 */
 	explicit Exception(const std::string& msg, int errCode) :
-		mMsg(msg + " (" + strerror(errCode) + ")"),
-		mErrCode(errCode) {};
+		mMsg(msg), mErrCode(errCode) {};
 
 	/**
 	 * returns error message
 	 */
-	const char* what() const throw() { return mMsg.c_str(); };
+	const char* what() const throw() override
+	{
+		if (mWhat.empty())
+		{
+			mWhat = formatMessage(mMsg, mErrCode);
+		}
+
+		return mWhat.c_str();
+	}
 
 	/**
 	 * returns error code
@@ -62,6 +69,12 @@ public:
 private:
 	std::string mMsg;
 	int mErrCode;
+	mutable std::string mWhat;
+
+	virtual std::string formatMessage(const std::string& msg, int errCode) const
+	{
+		return msg + " (" + strerror(errCode) + ")";
+	}
 };
 
 }
