@@ -121,7 +121,20 @@ bool PollFd::poll()
 
 	if (mFds[PollIndex::FILE].revents & (~mFds[PollIndex::FILE].events))
 	{
-		throw Exception("Error reading file", errno);
+		if (mFds[PollIndex::FILE].revents & POLLERR)
+		{
+			throw Exception("Poll error condition", EPERM);
+		}
+
+		if (mFds[PollIndex::FILE].revents & POLLHUP)
+		{
+			throw Exception("Poll hang up", EPERM);
+		}
+
+		if (mFds[PollIndex::FILE].revents & POLLNVAL)
+		{
+			throw Exception("Poll invalid request", EINVAL);
+		}
 	}
 
 	return true;
