@@ -80,6 +80,7 @@ static void waitForWatch()
 TEST_CASE("XenStore", "[xenstore]")
 {
 	XenStoreMock::setErrorMode(false);
+	XenStoreMock::setWriteValueCbk(nullptr);
 
 	XenStore xenStore(errorHandling);
 

@@ -55,6 +55,11 @@ static XenbusState gBeState = XenbusStateUnknown;
 static bool gOnBind = false;
 static std::list<XenbusState> gBeStates;
 
+TestFrontendHandler::~TestFrontendHandler()
+{
+	stop();
+}
+
 void TestFrontendHandler::prepareXenStore(const string& devName,
 										  domid_t beDomId, domid_t feDomId,
 										  uint16_t devId)
@@ -78,7 +83,7 @@ void TestFrontendHandler::prepareXenStore(const string& devName,
 
 	storeMock.writeValue(fePath + "/state", to_string(XenbusStateUnknown));
 
-	storeMock.writeValue(bePath + "/state", to_string(XenbusStateUnknown));
+	storeMock.writeValue(bePath + "/state", to_string(XenbusStateClosed));
 }
 
 void TestFrontendHandler::onBind()
@@ -124,27 +129,25 @@ TEST_CASE("FrontendHandler", "[frontendhandler]")
 	XenEvtchnMock::setErrorMode(false);
 	XenGnttabMock::setErrorMode(false);
 	XenStoreMock::setErrorMode(false);
+	XenStoreMock::setWriteValueCbk(nullptr);
 
 	TestFrontendHandler::prepareXenStore(gDevName, 0, gDomId, gDevId);
 
 	gBeStates.clear();
 	gOnBind = false;
 
-	TestFrontendHandler frontendHandler(gDevName, 0, gDomId, gDevId);
-
 	XenStoreMock storeMock;
 
-	storeMock.setWriteValueCbk([&] (const string& path, const string& value)
-		{ if (path == frontendHandler.getXsBackendPath() + "/state") {
-			backendStateChanged(static_cast<XenbusState>(stoi(value))); }});
+	TestFrontendHandler frontendHandler(gDevName, 0, gDomId, gDevId);
 
 	auto fePath = frontendHandler.getXsFrontendPath();
 	auto bePath = frontendHandler.getXsBackendPath();
 
-	frontendHandler.start();
+	storeMock.setWriteValueCbk([&] (const string& path, const string& value)
+		{ if (path == bePath + "/state") {
+			backendStateChanged(static_cast<XenbusState>(stoi(value))); }});
 
-	REQUIRE(waitBeStateChanged());
-	REQUIRE(gBeState == XenbusStateInitialising);
+	frontendHandler.start();
 
 	SECTION("Check getters")
 	{

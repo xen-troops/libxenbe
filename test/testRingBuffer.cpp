@@ -62,10 +62,6 @@ void sendReq(xentest_req& req, xen_test_front_ring& ring)
 	{
 		XenEvtchnMock::signalPort(XenEvtchnMock::getLastBoundPort());
 	}
-	else
-	{
-		LOG("Req", INFO) << "No notify";
-	}
 }
 
 bool receiveResp(xentest_rsp& rsp, xen_test_front_ring& ring)

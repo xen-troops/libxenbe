@@ -78,6 +78,7 @@ TEST_CASE("BackendHandler", "[backendhandler]")
 	XenEvtchnMock::setErrorMode(false);
 	XenGnttabMock::setErrorMode(false);
 	XenStoreMock::setErrorMode(false);
+	XenStoreMock::setWriteValueCbk(nullptr);
 
 	TestFrontendHandler::prepareXenStore(gDevName,
 										 gDomId, gFrontDomId,
