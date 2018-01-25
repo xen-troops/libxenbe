@@ -273,8 +273,9 @@ private:
 
 	Log mLog;
 
-	void release();
 	void initXenStorePathes();
+	void init();
+	void release();
 	void frontendStateChanged();
 	void backendStateChanged();
 	void onFrontendStateChanged(xenbus_state state);

@@ -67,7 +67,7 @@ FrontendHandlerBase::FrontendHandlerBase(const string& name,
 	LOG(mLog, DEBUG) << Utils::logDomId(mFeDomId, mDevId)
 					 << "Create frontend handler";
 
-	initXenStorePathes();
+	init();
 }
 
 FrontendHandlerBase::~FrontendHandlerBase()
@@ -91,8 +91,6 @@ void FrontendHandlerBase::start()
 
 	mXenStore.setWatch(mBeStatePath,
 					   bind(&FrontendHandlerBase::backendStateChanged, this));
-
-	setBackendState(XenbusStateInitialising);
 
 	mXenStore.start();
 }
@@ -138,13 +136,11 @@ void FrontendHandlerBase::setBackendState(xenbus_state state)
 					<< "Set backend state to: "
 					<< Utils::logState(state);
 
-	auto path = mXsBackendPath + "/state";
-
 	mBackendState = state;
 
 	if (mXenStore.checkIfExist(mBeStatePath))
 	{
-		mXenStore.writeInt(path, state);
+		mXenStore.writeInt(mBeStatePath, state);
 	}
 }
 
@@ -253,6 +249,37 @@ void FrontendHandlerBase::initXenStorePathes()
 	LOG(mLog, DEBUG) << "Backend path:  " << mXsBackendPath;
 }
 
+void FrontendHandlerBase::init()
+{
+	initXenStorePathes();
+
+	if (mXenStore.checkIfExist(mBeStatePath))
+	{
+		mBackendState = static_cast<xenbus_state>(mXenStore.readInt(mBeStatePath));
+
+		if (mBackendState != XenbusStateClosed)
+		{
+			close(XenbusStateInitialising);
+		}
+		else
+		{
+			setBackendState(XenbusStateInitialising);
+		}
+	}
+}
+
+void FrontendHandlerBase::release()
+{
+	// stop is required to prevent calling processRequest during deletion
+
+	for(auto ringBuffer : mRingBuffers)
+	{
+		ringBuffer->stop();
+	}
+
+	mRingBuffers.clear();
+}
+
 void FrontendHandlerBase::frontendStateChanged()
 {
 	lock_guard<mutex> lock(mMutex);
@@ -346,18 +373,6 @@ void FrontendHandlerBase::onError(const std::exception& e)
 
 	mAsyncContext.call(bind(&FrontendHandlerBase::close, this,
 					   XenbusStateClosed));
-}
-
-void FrontendHandlerBase::release()
-{
-	// stop is required to prevent calling processRequest during deletion
-
-	for(auto ringBuffer : mRingBuffers)
-	{
-		ringBuffer->stop();
-	}
-
-	mRingBuffers.clear();
 }
 
 void FrontendHandlerBase::close(xenbus_state stateAfterClose)
