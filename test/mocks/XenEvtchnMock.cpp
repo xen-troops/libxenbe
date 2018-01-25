@@ -230,6 +230,8 @@ void XenEvtchnMock::notifyPort(evtchn_port_t port)
 
 evtchn_port_t XenEvtchnMock::getPendingPort()
 {
+	lock_guard<mutex> lock(sMutex);
+
 	if (mSignaledPorts.size() == 0)
 	{
 		throw Exception("No pending ports", ENOENT);

@@ -33,6 +33,8 @@ public:
 										beDomId, feDomId, devId)
 	{}
 
+	~TestFrontendHandler();
+
 	static void prepareXenStore(const std::string& devName,
 								domid_t beDomId, domid_t feDomId,
 								uint16_t devId);

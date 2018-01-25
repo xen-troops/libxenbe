@@ -38,6 +38,8 @@ public:
 						 	 	 	 xentest_req, xentest_rsp>
 		(domId, port, ref) {}
 
+	~TestRingBufferIn() { stop(); }
+
 private:
 
 	void processRequest(const xentest_req& req) override;
@@ -51,6 +53,8 @@ public:
 		XenBackend::RingBufferOutBase<xentest_event_page, xentest_evt>(
 			domId, port, ref, XENTEST_IN_RING_OFFS, XENTEST_IN_RING_SIZE)
 	{}
+
+	~TestRingBufferOut() { stop(); }
 };
 
 #endif /* TEST_TESTRINGBUFFER_HPP_ */
