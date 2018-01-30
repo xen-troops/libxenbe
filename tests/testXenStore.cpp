@@ -23,7 +23,7 @@
 #include <condition_variable>
 #include <mutex>
 
-#include <catch.hpp>
+#include "catch.hpp"
 
 #include "mocks/XenStoreMock.hpp"
 #include "XenStore.hpp"

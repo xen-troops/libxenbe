@@ -18,13 +18,14 @@
  * Copyright (C) 2016 EPAM Systems Inc.
  */
 
+#include "testFrontendHandler.hpp"
+
 #include <chrono>
 #include <condition_variable>
 #include <mutex>
 
-#include <catch.hpp>
+#include "catch.hpp"
 
-#include "testFrontendHandler.hpp"
 #include "mocks/XenEvtchnMock.hpp"
 #include "mocks/XenGnttabMock.hpp"
 #include "mocks/XenStoreMock.hpp"

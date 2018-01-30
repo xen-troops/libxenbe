@@ -51,7 +51,7 @@ endif()
 
 if(WITH_TEST)
 	enable_testing()
-	add_subdirectory(test)
+	add_subdirectory(tests)
 	if (CMAKE_BUILD_TYPE STREQUAL "Coverage")
 		set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/CMakeModules)
 		include(CodeCoverage)

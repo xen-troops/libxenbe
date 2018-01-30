@@ -18,8 +18,8 @@
  * Copyright (C) 2016 EPAM Systems Inc.
  */
 
-#ifndef TEST_MOCKS_XENEVTCHNMOCK_HPP_
-#define TEST_MOCKS_XENEVTCHNMOCK_HPP_
+#ifndef TESTS_MOCKS_XENEVTCHNMOCK_HPP_
+#define TESTS_MOCKS_XENEVTCHNMOCK_HPP_
 
 #include <functional>
 #include <list>
@@ -101,4 +101,4 @@ private:
 	std::list<BoundPort>::iterator getBoundPort(evtchn_port_t port);
 };
 
-#endif /* TEST_MOCKS_XENEVTCHNMOCK_HPP_ */
+#endif /* TESTS_MOCKS_XENEVTCHNMOCK_HPP_ */

@@ -18,8 +18,8 @@
  * Copyright (C) 2016 EPAM Systems Inc.
  */
 
-#ifndef TEST_TESTPROTOCOL_H_
-#define TEST_TESTPROTOCOL_H_
+#ifndef TESTS_TESTPROTOCOL_H_
+#define TESTS_TESTPROTOCOL_H_
 
 #include <xenctrl.h>
 #include <xen/io/ring.h>
@@ -125,4 +125,4 @@ struct xentest_event_page
 
 /// @endcond
 
-#endif /* TEST_TESTPROTOCOL_H_ */
+#endif /* TESTS_TESTPROTOCOL_H_ */

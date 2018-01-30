@@ -1,5 +1,5 @@
 /*
- *  Test Backend
+ *  Pipe
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -18,22 +18,32 @@
  * Copyright (C) 2016 EPAM Systems Inc.
  */
 
-#ifndef TEST_TESTBACKEND_HPP_
-#define TEST_TESTBACKEND_HPP_
+#ifndef TESTS_MOCKS_PIPE_HPP_
+#define TESTS_MOCKS_PIPE_HPP_
 
-#include "BackendBase.hpp"
+#include <cstddef>
 
-class TestBackend : public XenBackend::BackendBase
+class Pipe
 {
 public:
 
-	TestBackend(const std::string& devName) :
-		XenBackend::BackendBase("TestBackend", devName)
-	{}
+	Pipe();
+	~Pipe();
+
+	int getFd() const { return mFds[PipeType::READ]; }
+
+	void read();
+	void write();
 
 private:
 
-	void onNewFrontend(domid_t domId, uint16_t devId) override;
+	enum PipeType
+	{
+		READ = 0,
+		WRITE = 1
+	};
+
+	int mFds[2];
 };
 
-#endif /* TEST_TESTBACKEND_HPP_ */
+#endif /* TESTS_MOCKS_PIPE_HPP_ */

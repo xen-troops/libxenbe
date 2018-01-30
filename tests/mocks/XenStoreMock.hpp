@@ -18,8 +18,8 @@
  * Copyright (C) 2016 EPAM Systems Inc.
  */
 
-#ifndef TEST_MOCKS_XENSTOREMOCK_HPP_
-#define TEST_MOCKS_XENSTOREMOCK_HPP_
+#ifndef TESTS_MOCKS_XENSTOREMOCK_HPP_
+#define TESTS_MOCKS_XENSTOREMOCK_HPP_
 
 #include <functional>
 #include <list>
@@ -28,7 +28,7 @@
 #include <unordered_map>
 #include <vector>
 
-#include "Pipe.hpp"
+#include "../../tests/mocks/Pipe.hpp"
 
 class XenStoreMock
 {
@@ -88,4 +88,4 @@ private:
 	static void pushWatch(const std::string& path);
 };
 
-#endif /* TEST_MOCKS_XENSTOREMOCK_HPP_ */
+#endif /* TESTS_MOCKS_XENSTOREMOCK_HPP_ */
