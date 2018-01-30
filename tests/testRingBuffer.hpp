@@ -18,8 +18,8 @@
  * Copyright (C) 2016 EPAM Systems Inc.
  */
 
-#ifndef TEST_TESTRINGBUFFER_HPP_
-#define TEST_TESTRINGBUFFER_HPP_
+#ifndef TESTS_TESTRINGBUFFER_HPP_
+#define TESTS_TESTRINGBUFFER_HPP_
 
 #include "RingBufferBase.hpp"
 
@@ -57,4 +57,4 @@ public:
 	~TestRingBufferOut() { stop(); }
 };
 
-#endif /* TEST_TESTRINGBUFFER_HPP_ */
+#endif /* TESTS_TESTRINGBUFFER_HPP_ */

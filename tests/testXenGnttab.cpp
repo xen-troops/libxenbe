@@ -1,5 +1,5 @@
 /*
- *  Test Frontend Handler
+ *  Test XenGnttab
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -18,32 +18,40 @@
  * Copyright (C) 2016 EPAM Systems Inc.
  */
 
-#ifndef TEST_TESTFRONTENDHANDLER_HPP_
-#define TEST_TESTFRONTENDHANDLER_HPP_
+#include "catch.hpp"
 
-#include "FrontendHandlerBase.hpp"
+#include "mocks/XenGnttabMock.hpp"
+#include "XenGnttab.hpp"
 
-class TestFrontendHandler : public XenBackend::FrontendHandlerBase
+using XenBackend::XenGnttabBuffer;
+
+TEST_CASE("XenGnttab", "[xengnttab]")
 {
-public:
+	XenGnttabMock::setErrorMode(false);
 
-	TestFrontendHandler(const std::string& devName,
-						domid_t beDomId, domid_t feDomId, uint16_t devId) :
-		XenBackend::FrontendHandlerBase("TestFrontend", devName,
-										beDomId, feDomId, devId)
-	{}
+	SECTION("Check one page")
+	{
+		XenGnttabBuffer xenBuffer(3, 14);
 
-	~TestFrontendHandler();
+		REQUIRE(xenBuffer.size() ==
+				XenGnttabMock::getMapBufferSize(xenBuffer.get()));
+	}
 
-	static void prepareXenStore(const std::string& devName,
-								domid_t beDomId, domid_t feDomId,
-								uint16_t devId);
+	SECTION("Check multiple pages")
+	{
+		size_t count = 5;
+		grant_ref_t refs[count] = { 1, 2, 3, 4, 5 };
 
-private:
+		XenGnttabBuffer  xenBuffer(3, refs, count);
 
-	void onBind() override;
-	void onClosing() override;
-};
+		REQUIRE(xenBuffer.size() ==
+				XenGnttabMock::getMapBufferSize(xenBuffer.get()));
+	}
 
+	SECTION("Check errors")
+	{
+		XenGnttabMock::setErrorMode(true);
 
-#endif /* TEST_TESTFRONTENDHANDLER_HPP_ */
+		REQUIRE_THROWS(XenGnttabBuffer(3, 14));
+	}
+}

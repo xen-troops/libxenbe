@@ -18,7 +18,7 @@
  * Copyright (C) 2016 EPAM Systems Inc.
  */
 
-#include <catch.hpp>
+#include "catch.hpp"
 
 #include "mocks/XenCtrlMock.hpp"
 #include "XenStat.hpp"

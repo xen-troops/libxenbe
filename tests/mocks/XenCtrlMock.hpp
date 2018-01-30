@@ -1,5 +1,5 @@
 /*
- *  Pipe
+ *  XenCtrlMock
  *
  *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of the GNU General Public License as published by
@@ -18,32 +18,42 @@
  * Copyright (C) 2016 EPAM Systems Inc.
  */
 
-#ifndef TEST_MOCKS_PIPE_HPP_
-#define TEST_MOCKS_PIPE_HPP_
+#ifndef TESTS_MOCKS_XENCTRLMOCK_HPP_
+#define TESTS_MOCKS_XENCTRLMOCK_HPP_
 
-#include <cstddef>
+#include <list>
+#include <mutex>
 
-class Pipe
+extern "C" {
+#include <xenctrl.h>
+}
+
+class XenCtrlMock
 {
 public:
 
-	Pipe();
-	~Pipe();
+	static void setErrorMode(bool errorMode)
+	{
+		std::lock_guard<std::mutex> lock(sMutex);
 
-	int getFd() const { return mFds[PipeType::READ]; }
+		sErrorMode = errorMode;
+	}
+	static bool getErrorMode()
+	{
+		std::lock_guard<std::mutex> lock(sMutex);
 
-	void read();
-	void write();
+		return sErrorMode;
+	}
+
+	static void addDomInfo(const xc_domaininfo_t& info);
+	static int getDomInfos(domid_t firstDom, unsigned int maxDoms,
+						   xc_domaininfo_t* info);
 
 private:
 
-	enum PipeType
-	{
-		READ = 0,
-		WRITE = 1
-	};
-
-	int mFds[2];
+	static std::mutex sMutex;
+	static bool sErrorMode;
+	static std::list<xc_domaininfo_t> sDomInfos;
 };
 
-#endif /* TEST_MOCKS_PIPE_HPP_ */
+#endif /* TESTS_MOCKS_XENCTRLMOCK_HPP_ */

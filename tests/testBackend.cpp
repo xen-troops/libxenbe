@@ -1,3 +1,4 @@
+
 #define CATCH_CONFIG_RUNNER
 #define CATCH_CONFIG_COLOUR_NONE
 
@@ -5,7 +6,7 @@
 #include <condition_variable>
 #include <mutex>
 
-#include <catch.hpp>
+#include "catch.hpp"
 
 #include "Log.hpp"
 #include "mocks/XenCtrlMock.hpp"

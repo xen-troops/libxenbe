@@ -18,8 +18,8 @@
  * Copyright (C) 2016 EPAM Systems Inc.
  */
 
-#ifndef TEST_MOCKS_XENGNTTABMOCK_HPP_
-#define TEST_MOCKS_XENGNTTABMOCK_HPP_
+#ifndef TESTS_MOCKS_XENGNTTABMOCK_HPP_
+#define TESTS_MOCKS_XENGNTTABMOCK_HPP_
 
 #include <mutex>
 #include <unordered_map>
@@ -68,4 +68,4 @@ private:
 	static std::unordered_map<void*, MapBuffer> sMapBuffers;
 };
 
-#endif /* TEST_MOCKS_XENGNTTABMOCK_HPP_ */
+#endif /* TESTS_MOCKS_XENGNTTABMOCK_HPP_ */
