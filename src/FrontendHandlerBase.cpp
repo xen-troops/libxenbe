@@ -266,6 +266,8 @@ void FrontendHandlerBase::init()
 			setBackendState(XenbusStateInitialising);
 		}
 	}
+
+	mBackendState = XenbusStateUnknown;
 }
 
 void FrontendHandlerBase::release()
