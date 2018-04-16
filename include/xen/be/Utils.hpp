@@ -22,6 +22,7 @@
 #define XENBE_UTILS_HPP_
 
 #include <condition_variable>
+#include <functional>
 #include <list>
 #include <string>
 #include <thread>
