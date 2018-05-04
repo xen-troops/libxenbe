@@ -104,4 +104,158 @@ void XenGnttabBuffer::release()
 	}
 }
 
+/*******************************************************************************
+ * XenGnttabDmaBufferExporter
+ ******************************************************************************/
+
+XenGnttabDmaBufferExporter::XenGnttabDmaBufferExporter(domid_t domId,
+													   const GrantRefs &refs):
+	mDmaBufFd(-1),
+	mLog("XenGnttabDmaBufferExporter")
+{
+	try
+	{
+		init(domId, refs);
+	}
+	catch(const std::exception& e)
+	{
+		release();
+
+		throw;
+	}
+}
+
+XenGnttabDmaBufferExporter::~XenGnttabDmaBufferExporter()
+{
+	release();
+}
+
+/*******************************************************************************
+ * Private
+ ******************************************************************************/
+
+void XenGnttabDmaBufferExporter::init(domid_t domId, const GrantRefs &refs)
+{
+	static XenGnttab gnttab;
+	uint32_t fd;
+	int ret;
+
+	mHandle = gnttab.getHandle();
+
+	DLOG(mLog, DEBUG) << "Produce DMA buffer from grant references, dom: "
+					  << domId << ", count: " << refs.size();
+
+	/* Always allocate the buffer to be DMA capable. */
+	ret = xengnttab_dmabuf_exp_from_refs(mHandle, domId, GNTDEV_DMA_FLAG_WC,
+										 refs.size(), refs.data(), &fd);
+
+	if (ret)
+	{
+		throw XenGnttabException("Can't produce DMA buffer from grant references",
+								 errno);
+	}
+
+	mDmaBufFd = fd;
+}
+
+int XenGnttabDmaBufferExporter::waitForReleased(int timeoutMs)
+{
+	uint32_t fd = mDmaBufFd;
+	int ret;
+
+	release();
+
+	ret = xengnttab_dmabuf_exp_wait_released(mHandle, fd, timeoutMs);
+
+	if (ret)
+	{
+		DLOG(mLog, ERROR) << "Wait for DMA buffer failed, fd: "
+					  << fd << ", err: " << ret
+					  << "(" << strerror(errno) << ")";
+	}
+
+	return ret;
+}
+
+void XenGnttabDmaBufferExporter::release()
+{
+	if (mDmaBufFd >= 0)
+	{
+		close(mDmaBufFd);
+		mDmaBufFd = -1;
+	}
+}
+
+/*******************************************************************************
+ * XenGnttabDmaBufferImporter
+ ******************************************************************************/
+
+XenGnttabDmaBufferImporter::XenGnttabDmaBufferImporter(domid_t domId,
+													   int fd,
+													   GrantRefs &refs):
+	mDmaBufFd(-1),
+	mLog("XenGnttabDmaBufferImporter")
+{
+	try
+	{
+		init(domId, fd, refs);
+	}
+	catch(const std::exception& e)
+	{
+		release();
+
+		throw;
+	}
+}
+
+XenGnttabDmaBufferImporter::~XenGnttabDmaBufferImporter()
+{
+	release();
+}
+
+/*******************************************************************************
+ * Private
+ ******************************************************************************/
+
+void XenGnttabDmaBufferImporter::init(domid_t domId, int fd, GrantRefs &refs)
+{
+	static XenGnttab gnttab;
+	int ret;
+
+	mHandle = gnttab.getHandle();
+
+	DLOG(mLog, DEBUG) << "Produce grant references from DMA buffer, dom: "
+					  << domId << ", fd: " << fd << ", count: " << refs.size();
+
+	ret = xengnttab_dmabuf_imp_to_refs(mHandle, domId, fd,
+									   refs.size(), refs.data());
+
+	if (ret)
+	{
+		throw XenGnttabException("Can't produce grant references from DMA buffer",
+								 errno);
+	}
+
+	mDmaBufFd = fd;
+}
+
+void XenGnttabDmaBufferImporter::release()
+{
+	if (mDmaBufFd >= 0)
+	{
+		int ret;
+
+		DLOG(mLog, DEBUG) << "Release DMA buffer, fd: " << mDmaBufFd;
+
+		ret = xengnttab_dmabuf_imp_release(mHandle, mDmaBufFd);
+
+		if (ret)
+		{
+			throw XenGnttabException("Can't release DMA buffer", errno);
+		}
+
+		mDmaBufFd = -1;
+	}
+}
+
 }
