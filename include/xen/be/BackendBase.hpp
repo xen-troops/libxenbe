@@ -125,6 +125,8 @@ public:
 
 protected:
 
+	XenStore mXenStore;
+
 	/**
 	 * Is called when new frontend detected.
 	 * Basically the client should create
@@ -146,7 +148,6 @@ private:
 	domid_t mDomId;
 	std::string mDeviceName;
 	std::string mFrontendsPath;
-	XenStore mXenStore;
 	std::list<domid_t> mDomainList;
 	std::list<FrontendHandlerPtr> mFrontendHandlers;
 

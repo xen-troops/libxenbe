@@ -76,9 +76,9 @@ namespace XenBackend {
  ******************************************************************************/
 
 BackendBase::BackendBase(const string& name, const string& deviceName) :
+	mXenStore(bind(&BackendBase::onError, this, _1)),
 	mDomId(0),
 	mDeviceName(deviceName),
-	mXenStore(bind(&BackendBase::onError, this, _1)),
 	mLog(name.empty() ? "Backend" : name)
 {
 	mDomId = mXenStore.readInt("domid");
