@@ -107,7 +107,7 @@ class ExampleBackend : public XenBackend::BackendBase
 public:
 
 	ExampleBackend() :
-		BackendBase("ExampleBackend", "example_dev", 0),
+		BackendBase("ExampleBackend", "example_dev"),
 		mLog("ExampleBackend")
 	{
 		LOG(mLog, DEBUG) << "Create example backend";
