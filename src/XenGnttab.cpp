@@ -104,6 +104,8 @@ void XenGnttabBuffer::release()
 	}
 }
 
+#ifdef GNTDEV_DMA_FLAG_WC
+
 /*******************************************************************************
  * XenGnttabDmaBufferExporter
  ******************************************************************************/
@@ -257,5 +259,7 @@ void XenGnttabDmaBufferImporter::release()
 		mDmaBufFd = -1;
 	}
 }
+
+#endif	// GNTDEV_DMA_FLAG_WC
 
 }
