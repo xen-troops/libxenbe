@@ -51,6 +51,13 @@ class XenGnttabException : public Exception
  ******************************************************************************/
 class XenGnttab
 {
+public:
+	/**
+	 * Returns the grant table handle
+	 * @return handle
+	 */
+	static xengnttab_handle* getHandle();
+
 private:
 
 	friend class XenGnttabBuffer;
@@ -61,12 +68,6 @@ private:
 	XenGnttab(const XenGnttab&) = delete;
 	XenGnttab& operator=(XenGnttab const&) = delete;
 	~XenGnttab();
-
-	/**
-	 * Returns the grant table handle
-	 * @return handle
-	 */
-	xengnttab_handle* getHandle() const { return mHandle; }
 
 	xengnttab_handle* mHandle;
 };
