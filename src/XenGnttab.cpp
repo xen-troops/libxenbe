@@ -44,6 +44,13 @@ XenGnttab::~XenGnttab()
 	}
 }
 
+xengnttab_handle* XenGnttab::getHandle()
+{
+	static XenGnttab gnttab;
+
+	return gnttab.mHandle;
+}
+
 /*******************************************************************************
  * XenGnttabBuffer
  ******************************************************************************/
@@ -73,9 +80,7 @@ XenGnttabBuffer::~XenGnttabBuffer()
 void XenGnttabBuffer::init(domid_t domId, const grant_ref_t* refs,
 						   size_t count, int prot)
 {
-	static XenGnttab gnttab;
-
-	mHandle = gnttab.getHandle();
+	mHandle = XenGnttab::getHandle();
 	mBuffer = nullptr;
 	mCount = count;
 
@@ -138,11 +143,10 @@ XenGnttabDmaBufferExporter::~XenGnttabDmaBufferExporter()
 
 void XenGnttabDmaBufferExporter::init(domid_t domId, const GrantRefs &refs)
 {
-	static XenGnttab gnttab;
 	uint32_t fd;
 	int ret;
 
-	mHandle = gnttab.getHandle();
+	mHandle = XenGnttab::getHandle();
 
 	DLOG(mLog, DEBUG) << "Produce DMA buffer from grant references, dom: "
 					  << domId << ", count: " << refs.size();
@@ -221,10 +225,9 @@ XenGnttabDmaBufferImporter::~XenGnttabDmaBufferImporter()
 
 void XenGnttabDmaBufferImporter::init(domid_t domId, int fd, GrantRefs &refs)
 {
-	static XenGnttab gnttab;
 	int ret;
 
-	mHandle = gnttab.getHandle();
+	mHandle = XenGnttab::getHandle();
 
 	DLOG(mLog, DEBUG) << "Produce grant references from DMA buffer, dom: "
 					  << domId << ", fd: " << fd << ", count: " << refs.size();
