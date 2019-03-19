@@ -202,7 +202,7 @@ void FrontendHandlerBase::onStateClosing()
 	if (mBackendState == XenbusStateInitialised ||
 		mBackendState == XenbusStateConnected)
 	{
-		close(XenbusStateInitWait);
+		close(XenbusStateClosed);
 	}
 }
 
@@ -211,7 +211,7 @@ void FrontendHandlerBase::onStateClosed()
 	if (mBackendState == XenbusStateInitialised ||
 		mBackendState == XenbusStateConnected)
 	{
-		close(XenbusStateInitWait);
+		close(XenbusStateClosed);
 	}
 }
 
