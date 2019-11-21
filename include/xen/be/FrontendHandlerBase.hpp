@@ -122,20 +122,18 @@ public:
 	/**
 	 * @param[in] name                optional frontend name
 	 * @param[in] devName             device name
-	 * @param[in] beDomId             backend domain id
-	 * @param[in] feDomId             frontend domain id
-	 * @param[in] beDevId             backend device id
-	 * @param[in] feDevId             frontend device id
+	 * @param[in] domId               frontend domain id
+	 * @param[in] devId               device id
 	 */
 	FrontendHandlerBase(const std::string& name, const std::string& devName,
-						domid_t beDomId, domid_t feDomId, uint16_t devId = 0);
+						domid_t domId, uint16_t devId = 0);
 
 	virtual ~FrontendHandlerBase();
 
 	/**
 	 * Returns frontend domain id
 	 */
-	domid_t getDomId() const { return mFeDomId; }
+	domid_t getDomId() const { return mDomId; }
 
 	/**
 	 * Returns frontend device id
@@ -250,8 +248,7 @@ private:
 
 	typedef void(FrontendHandlerBase::*StateFn)();
 
-	domid_t mBeDomId;
-	domid_t mFeDomId;
+	domid_t mDomId;
 	uint16_t mDevId;
 	std::string mDevName;
 	std::string mBeStatePath;

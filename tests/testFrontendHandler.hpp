@@ -30,7 +30,7 @@ public:
 	TestFrontendHandler(const std::string& devName,
 						domid_t beDomId, domid_t feDomId, uint16_t devId) :
 		XenBackend::FrontendHandlerBase("TestFrontend", devName,
-										beDomId, feDomId, devId)
+										feDomId, devId)
 	{}
 
 	~TestFrontendHandler();
