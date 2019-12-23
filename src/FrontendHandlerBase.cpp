@@ -51,12 +51,10 @@ namespace XenBackend {
  * FrontendHandlerBase
  ******************************************************************************/
 
-FrontendHandlerBase::FrontendHandlerBase(const string& name,
-										 const string& devName,
-										 domid_t beDomId, domid_t feDomId,
-										 uint16_t devId) :
-	mBeDomId(beDomId),
-	mFeDomId(feDomId),
+FrontendHandlerBase::FrontendHandlerBase(const std::string& name,
+										 const std::string& devName,
+										 domid_t domId, uint16_t devId) :
+	mDomId(domId),
 	mDevId(devId),
 	mDevName(devName),
 	mBackendState(XenbusStateUnknown),
@@ -64,7 +62,7 @@ FrontendHandlerBase::FrontendHandlerBase(const string& name,
 	mXenStore(bind(&FrontendHandlerBase::onError, this, _1)),
 	mLog(name.empty() ? "FrontendHandler" : name)
 {
-	LOG(mLog, DEBUG) << Utils::logDomId(mFeDomId, mDevId)
+	LOG(mLog, DEBUG) << Utils::logDomId(mDomId, mDevId)
 					 << "Create frontend handler";
 
 	init();
@@ -74,7 +72,7 @@ FrontendHandlerBase::~FrontendHandlerBase()
 {
 	stop();
 
-	LOG(mLog, DEBUG) << Utils::logDomId(mFeDomId, mDevId)
+	LOG(mLog, DEBUG) << Utils::logDomId(mDomId, mDevId)
 					 << "Delete frontend handler";
 }
 
@@ -114,7 +112,7 @@ void FrontendHandlerBase::stop()
 
 void FrontendHandlerBase::addRingBuffer(RingBufferPtr ringBuffer)
 {
-	LOG(mLog, INFO) << Utils::logDomId(mFeDomId, mDevId)
+	LOG(mLog, INFO) << Utils::logDomId(mDomId, mDevId)
 					<< "Add ring buffer, ref: "
 					<< ringBuffer->getRef() << ", port: "
 					<< ringBuffer->getPort();
@@ -132,7 +130,7 @@ void FrontendHandlerBase::setBackendState(xenbus_state state)
 		return;
 	}
 
-	LOG(mLog, INFO) << Utils::logDomId(mFeDomId, mDevId)
+	LOG(mLog, INFO) << Utils::logDomId(mDomId, mDevId)
 					<< "Set backend state to: "
 					<< Utils::logState(state);
 
@@ -157,7 +155,7 @@ void FrontendHandlerBase::onStateInitializing()
 {
 	if (mBackendState == XenbusStateConnected)
 	{
-		LOG(mLog, WARNING) << Utils::logDomId(mFeDomId, mDevId)
+		LOG(mLog, WARNING) << Utils::logDomId(mDomId, mDevId)
 						   << "Frontend restarted";
 
 		close(XenbusStateInitWait);
@@ -231,15 +229,9 @@ void FrontendHandlerBase::onStateReconfigured()
 
 void FrontendHandlerBase::initXenStorePathes()
 {
-	stringstream ss;
-
-	ss << mXenStore.getDomainPath(mBeDomId) << "/backend/"
-	   << mDevName << "/"
-	   << mFeDomId << "/" << mDevId;
-
-	mXsBackendPath = ss.str();
-
-	mXsFrontendPath = mXenStore.readString(mXsBackendPath + "/frontend");
+	mXsFrontendPath = mXenStore.getDomainPath(mDomId) + "/device/" + mDevName + 
+					  "/" + to_string(mDevId);
+	mXsBackendPath = mXenStore.readString(mXsFrontendPath + "/backend");
 
 	mFeStatePath = mXsFrontendPath + "/state";
 	mBeStatePath = mXsBackendPath + "/state";
@@ -266,8 +258,6 @@ void FrontendHandlerBase::init()
 			setBackendState(XenbusStateInitialising);
 		}
 	}
-
-	mBackendState = XenbusStateUnknown;
 }
 
 void FrontendHandlerBase::release()
@@ -300,7 +290,7 @@ void FrontendHandlerBase::frontendStateChanged()
 
 	mFrontendState = state;
 
-	LOG(mLog, INFO) << Utils::logDomId(mFeDomId, mDevId)
+	LOG(mLog, INFO) << Utils::logDomId(mDomId, mDevId)
 					<< "Frontend state changed to: "
 					<< Utils::logState(state);
 
@@ -325,7 +315,7 @@ void FrontendHandlerBase::backendStateChanged()
 
 	mBackendState = state;
 
-	LOG(mLog, INFO) << Utils::logDomId(mFeDomId, mDevId)
+	LOG(mLog, INFO) << Utils::logDomId(mDomId, mDevId)
 					<< "Backend state changed to: "
 					<< Utils::logState(state);
 
@@ -352,7 +342,7 @@ void FrontendHandlerBase::onFrontendStateChanged(xenbus_state state)
 	}
 	else
 	{
-		LOG(mLog, WARNING) << Utils::logDomId(mFeDomId, mDevId)
+		LOG(mLog, WARNING) << Utils::logDomId(mDomId, mDevId)
 						   << "Invalid state: " << state;
 	}
 }
@@ -371,7 +361,7 @@ void FrontendHandlerBase::onBackendStateChanged(xenbus_state state)
 
 void FrontendHandlerBase::onError(const std::exception& e)
 {
-	LOG(mLog, ERROR) << Utils::logDomId(mFeDomId, mDevId) << e.what();
+	LOG(mLog, ERROR) << Utils::logDomId(mDomId, mDevId) << e.what();
 
 	mAsyncContext.call(bind(&FrontendHandlerBase::close, this,
 					   XenbusStateClosed));

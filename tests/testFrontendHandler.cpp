@@ -82,6 +82,8 @@ void TestFrontendHandler::prepareXenStore(const string& devName,
 
 	storeMock.writeValue(bePath + "/frontend", fePath);
 
+	storeMock.writeValue(fePath + "/backend", bePath);
+
 	storeMock.writeValue(fePath + "/state", to_string(XenbusStateUnknown));
 
 	storeMock.writeValue(bePath + "/state", to_string(XenbusStateClosed));
