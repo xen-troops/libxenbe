@@ -55,17 +55,18 @@ xengnttab_handle* XenGnttab::getHandle()
  * XenGnttabBuffer
  ******************************************************************************/
 
-XenGnttabBuffer::XenGnttabBuffer(domid_t domId, grant_ref_t ref, int prot) :
-		XenGnttabBuffer(domId, &ref, 1, prot)
+XenGnttabBuffer::XenGnttabBuffer(domid_t domId, grant_ref_t ref, int prot,
+								 size_t offset) :
+		XenGnttabBuffer(domId, &ref, 1, prot, offset)
 {
 
 }
 
 XenGnttabBuffer::XenGnttabBuffer(domid_t domId, const grant_ref_t* refs,
-								 size_t count, int prot) :
+								 size_t count, int prot, size_t offset) :
 	mLog("XenGnttabBuffer")
 {
-	init(domId, refs, count, prot);
+	init(domId, refs, count, prot, offset);
 }
 
 XenGnttabBuffer::~XenGnttabBuffer()
@@ -78,14 +79,16 @@ XenGnttabBuffer::~XenGnttabBuffer()
  ******************************************************************************/
 
 void XenGnttabBuffer::init(domid_t domId, const grant_ref_t* refs,
-						   size_t count, int prot)
+						   size_t count, int prot, size_t offset)
 {
 	mHandle = XenGnttab::getHandle();
 	mBuffer = nullptr;
+	mOffset = offset;
 	mCount = count;
 
 	DLOG(mLog, DEBUG) << "Create grant table buffer, dom: " << domId
-					  << ", count: " << count << ", ref: " << *refs;
+					  << ", count: " << count << ", ref: " << *refs
+					  << ", buffer offset: " << offset;
 
 
 	mBuffer = xengnttab_map_domain_grant_refs(mHandle, count, domId,

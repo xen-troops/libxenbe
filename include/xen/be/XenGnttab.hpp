@@ -92,21 +92,25 @@ class XenGnttabBuffer
 public:
 
 	/**
-	 * @param[in] domId domain id
-	 * @param[in] ref   grant reference id
-	 * @param[in] prot  same flag as in mmap()
+	 * @param[in] domId  domain id
+	 * @param[in] ref    grant reference id
+	 * @param[in] prot   same flag as in mmap()
+	 * @param[in] offset offset of the data inside the buffer
 	 */
 	XenGnttabBuffer(domid_t domId, grant_ref_t ref,
-					int prot = PROT_READ | PROT_WRITE);
+					int prot = PROT_READ | PROT_WRITE,
+					size_t offset = 0);
 
 	/**
-	 * @param[in] domId domain id
-	 * @param[in] refs  array of grant reference ids
-	 * @param[in] count number of grant refgerence ids
-	 * @param[in] prot  same flag as in mmap()
+	 * @param[in] domId  domain id
+	 * @param[in] refs   array of grant reference ids
+	 * @param[in] count  number of grant refgerence ids
+	 * @param[in] prot   same flag as in mmap()
+	 * @param[in] offset offset of the data inside the buffer
 	 */
 	XenGnttabBuffer(domid_t domId, const grant_ref_t* refs, size_t count,
-					int prot = PROT_READ | PROT_WRITE);
+					int prot = PROT_READ | PROT_WRITE,
+					size_t offset = 0);
 	XenGnttabBuffer(const XenGnttabBuffer&) = delete;
 	XenGnttabBuffer& operator=(XenGnttabBuffer const&) = delete;
 	~XenGnttabBuffer();
@@ -114,7 +118,7 @@ public:
 	/**
 	 * Returns pointer to the mapped buffer.
 	 */
-	void* get() const { return mBuffer; }
+	void* get() const { return static_cast<uint8_t*>(mBuffer) + mOffset; }
 
 	/**
 	 * Returns sizeo of the mapped buffer.
@@ -123,12 +127,14 @@ public:
 
 private:
 	void* mBuffer;
+	size_t mOffset;
 	xengnttab_handle* mHandle;
 	size_t mCount;
 	Log mLog;
 
 
-	void init(domid_t domId, const grant_ref_t* refs, size_t count, int prot);
+	void init(domid_t domId, const grant_ref_t* refs, size_t count, int prot,
+			  size_t offset);
 	void release();
 };
 
