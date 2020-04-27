@@ -20,6 +20,24 @@ message(STATUS "XEN_LIB_PATH                  = ${XEN_LIB_PATH}")
 message(STATUS)
 
 ################################################################################
+# Autodetected options
+################################################################################
+
+include(CheckSymbolExists)
+
+# Test if version 2 of the xengnttab_dmabuf_imp_to_refs and
+# xengnttab_dmabuf_exp_from_refs functions are supported:
+# these functions have an additional data_ofs parameter
+# to set/get the offset of the data in the dma-buf's scatter-gather
+# table
+set(CMAKE_REQUIRED_LIBRARIES xengnttab)
+check_symbol_exists("xengnttab_dmabuf_imp_to_refs_v2" "xengnttab.h" GNTTAB_HAS_DMABUF_OFFSET)
+
+if(GNTTAB_HAS_DMABUF_OFFSET)
+	add_definitions(-DGNTTAB_HAS_DMABUF_OFFSET)
+endif()
+
+################################################################################
 # Compiler flags
 ################################################################################
 
