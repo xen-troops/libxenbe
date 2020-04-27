@@ -161,7 +161,8 @@ public:
 	 *            will be produced
 	 * @param[in] refs  vector of grant reference ids
 	 */
-	XenGnttabDmaBufferExporter(domid_t domId, const GrantRefs &refs);
+	XenGnttabDmaBufferExporter(domid_t domId, const GrantRefs &refs,
+							   size_t offset = 0);
 
 	int getFd() const { return mDmaBufFd; }
 
@@ -178,7 +179,7 @@ private:
 	xengnttab_handle* mHandle;
 	Log mLog;
 
-	void init(domid_t domId, const GrantRefs &refs);
+	void init(domid_t domId, const GrantRefs &refs, size_t offset);
 	void release();
 };
 
@@ -213,10 +214,16 @@ public:
 			delete;
 	~XenGnttabDmaBufferImporter();
 
+	/**
+	 * Returns offset of the data of the buffer.
+	 */
+	size_t offset() const { return mOffset; }
+
 private:
 	GrantRefs mRefs;
 	int mDmaBufFd;
 	xengnttab_handle* mHandle;
+	size_t mOffset;
 	Log mLog;
 
 	void init(domid_t domId, int fd, GrantRefs &refs);

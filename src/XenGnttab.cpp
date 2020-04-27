@@ -119,13 +119,14 @@ void XenGnttabBuffer::release()
  ******************************************************************************/
 
 XenGnttabDmaBufferExporter::XenGnttabDmaBufferExporter(domid_t domId,
-													   const GrantRefs &refs):
+													   const GrantRefs &refs,
+													   size_t offset) :
 	mDmaBufFd(-1),
 	mLog("XenGnttabDmaBufferExporter")
 {
 	try
 	{
-		init(domId, refs);
+		init(domId, refs, offset);
 	}
 	catch(const std::exception& e)
 	{
@@ -144,7 +145,8 @@ XenGnttabDmaBufferExporter::~XenGnttabDmaBufferExporter()
  * Private
  ******************************************************************************/
 
-void XenGnttabDmaBufferExporter::init(domid_t domId, const GrantRefs &refs)
+void XenGnttabDmaBufferExporter::init(domid_t domId, const GrantRefs &refs,
+									  size_t offset)
 {
 	uint32_t fd;
 	int ret;
@@ -155,8 +157,21 @@ void XenGnttabDmaBufferExporter::init(domid_t domId, const GrantRefs &refs)
 					  << domId << ", count: " << refs.size();
 
 	/* Always allocate the buffer to be DMA capable. */
+#ifdef GNTTAB_HAS_DMABUF_OFFSET
+	DLOG(mLog, DEBUG) << "DMA buffer offset: " << offset;
+
+	ret = xengnttab_dmabuf_exp_from_refs_v2(mHandle, domId, GNTDEV_DMA_FLAG_WC,
+											refs.size(), refs.data(), &fd,
+											offset);
+#else
+	if (offset)
+	{
+		throw XenGnttabException("Can't produce DMA buffer from grant references with non-zero offset",
+								 ENOTSUP);
+	}
 	ret = xengnttab_dmabuf_exp_from_refs(mHandle, domId, GNTDEV_DMA_FLAG_WC,
 										 refs.size(), refs.data(), &fd);
+#endif
 
 	if (ret)
 	{
@@ -228,6 +243,7 @@ XenGnttabDmaBufferImporter::~XenGnttabDmaBufferImporter()
 
 void XenGnttabDmaBufferImporter::init(domid_t domId, int fd, GrantRefs &refs)
 {
+	uint32_t offset;
 	int ret;
 
 	mHandle = XenGnttab::getHandle();
@@ -235,8 +251,15 @@ void XenGnttabDmaBufferImporter::init(domid_t domId, int fd, GrantRefs &refs)
 	DLOG(mLog, DEBUG) << "Produce grant references from DMA buffer, dom: "
 					  << domId << ", fd: " << fd << ", count: " << refs.size();
 
+#ifdef GNTTAB_HAS_DMABUF_OFFSET
+	ret = xengnttab_dmabuf_imp_to_refs_v2(mHandle, domId, fd,
+										  refs.size(), refs.data(),
+										  &offset);
+#else
 	ret = xengnttab_dmabuf_imp_to_refs(mHandle, domId, fd,
 									   refs.size(), refs.data());
+	offset = 0;
+#endif
 
 	if (ret)
 	{
@@ -245,6 +268,7 @@ void XenGnttabDmaBufferImporter::init(domid_t domId, int fd, GrantRefs &refs)
 	}
 
 	mDmaBufFd = fd;
+	mOffset = static_cast<size_t>(offset);
 }
 
 void XenGnttabDmaBufferImporter::release()
