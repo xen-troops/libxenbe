@@ -22,7 +22,7 @@
 
 #include <cstring>
 #include <string>
-
+#include <cstdint>
 #include <unistd.h>
 
 #include "Exception.hpp"
